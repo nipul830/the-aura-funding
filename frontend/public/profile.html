@@ -9,8 +9,24 @@
 </main></div>
 <script>
 const form=document.getElementById("profileForm"),msg=document.getElementById("profileMessage");
-async function loadProfile(){const r=await fetch("/api/v1/auth/profile",{credentials:"same-origin"});const d=await r.json();if(!r.ok){const me=await fetch("/api/v1/auth/me",{credentials:"same-origin"});if(me.ok){const md=await me.json();d.user=md.user}else{location.href="/login";return}}const u=d.user;fullName.value=u.fullName||"";username.value=u.username||"";phone.value=u.phone||"";profileName.textContent=u.fullName||"Your Profile";profileEmail.textContent=u.email;emailText.textContent=u.email;avatar.textContent=(u.fullName||u.email||"A").charAt(0).toUpperCase()}
-form.addEventListener("submit",async e=>{e.preventDefault();msg.textContent="Saving…";const r=await fetch("/api/v1/auth/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName:fullName.value,username:username.value,phone:phone.value})});const d=await r.json();msg.textContent=r.ok?"Profile saved successfully.":(d.error||"Unable to save profile.");if(r.ok)loadProfile()});
+function renderProfile(u){if(!u)return;fullName.value=u.fullName||u.full_name||"";username.value=u.username||"";phone.value=u.phone||"";profileName.textContent=u.fullName||u.full_name||"Your Profile";profileEmail.textContent=u.email||"";emailText.textContent=u.email||"";avatar.textContent=(u.fullName||u.full_name||u.email||"A").charAt(0).toUpperCase();}
+async function loadProfile(){
+  try{
+    const cached=JSON.parse(localStorage.getItem("aura_user")||"null");
+    if(cached) renderProfile(cached);
+  }catch{}
+  try{
+    const r=await fetch("/api/v1/auth/profile",{credentials:"same-origin",cache:"no-store"});
+    const d=await r.json();
+    if(r.ok&&d.user){renderProfile(d.user);try{localStorage.setItem("aura_user",JSON.stringify(d.user))}catch{};return;}
+    const me=await fetch("/api/v1/auth/me",{credentials:"same-origin",cache:"no-store"});
+    if(me.ok){const md=await me.json();if(md.user){renderProfile(md.user);try{localStorage.setItem("aura_user",JSON.stringify(md.user))}catch{};return;}}
+    if(!localStorage.getItem("aura_user")) location.href="/login";
+  }catch{
+    if(!localStorage.getItem("aura_user")) location.href="/login";
+  }
+}
+form.addEventListener("submit",async e=>{e.preventDefault();msg.textContent="Saving…";const r=await fetch("/api/v1/auth/profile",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName:fullName.value,username:username.value,phone:phone.value})});const d=await r.json();msg.textContent=r.ok?"Profile saved successfully.":(d.error||"Unable to save profile.");if(r.ok){try{localStorage.setItem("aura_user",JSON.stringify(d.user))}catch{};loadProfile()}});
 certificateBtn.addEventListener("click",()=>certificateMessage.textContent="NFT Certificate generation is coming soon.");
-logoutBtn.addEventListener("click",async()=>{await fetch("/api/v1/auth/logout",{method:"POST"});location.href="/";});loadProfile();
+logoutBtn.addEventListener("click",async()=>{await fetch("/api/v1/auth/logout",{method:"POST",credentials:"same-origin"});try{localStorage.removeItem("aura_user")}catch{};location.href="/";});loadProfile();
 </script></body></html>
