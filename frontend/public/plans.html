@@ -111,7 +111,6 @@ async function loadPlans(){
    if(!d.plans?.length){plansEl.innerHTML='<div class="plan-empty">No active plans are available right now.</div>';return}
    allPlans=d.plans||[];
    renderPlans();
- }
  }catch(e){plansEl.innerHTML='<div class="plan-empty">Unable to load plans. Please try again.</div>'}
 }
 loadPlans();
