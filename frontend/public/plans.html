@@ -5,7 +5,14 @@
 <title>Plans · THE AURA FUNDING</title><link rel="stylesheet" href="/style.css">
 <style>
 .plan-page{max-width:1180px}
-.plan-intro{margin-bottom:26px}
+.plan-intro{margin-bottom:20px}
+.plan-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 24px;padding:6px;border:1px solid var(--line);border-radius:14px;background:#0b0f16}
+.plan-tab{border:0;border-radius:10px;padding:13px 10px;background:transparent;color:var(--muted);font-weight:800;font-size:14px;cursor:pointer}
+.plan-tab.active{background:#f5b72c;color:#090b0f}
+.variant-tabs{display:flex;gap:10px;margin:0 0 20px}
+.variant-tab{border:1px solid var(--line);border-radius:999px;padding:9px 18px;background:#0b0f16;color:var(--muted);font-weight:700;cursor:pointer}
+.variant-tab.active{border-color:#f5b72c;color:#f5b72c}
+.variant-tab.hidden{display:none}
 .plan-intro h2{margin:0 0 8px;font-size:28px}
 .plan-intro p{margin:0}
 .plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
@@ -29,11 +36,21 @@
 <nav class="nav"><a href="/">Home</a><a href="/user">Dashboard</a><a class="active" href="/user/plans">Plans</a><a href="/user/terminal">Terminal</a><a href="/user/settings">Settings</a></nav></aside>
 <main class="main plan-page">
 <div class="top"><div class="title"><h1>Challenge Plans</h1><div class="muted">Choose the account size that fits your trading style.</div></div><a class="profile-chip" href="/user/profile"><span class="avatar">A</span><span>Profile</span></a></div>
-<div class="plan-intro"><h2>Pick your challenge</h2><p class="muted">Your selected plan will be carried into checkout. Risk rules are controlled server-side.</p></div>
+<div class="plan-intro"><h2>Pick your challenge</h2><p class="muted">Select challenge type, then choose Lite or Pro.</p></div>
+<div class="plan-tabs">
+  <button class="plan-tab active" data-type="2 STEP">2 STEP</button>
+  <button class="plan-tab" data-type="1 STEP">1 STEP</button>
+  <button class="plan-tab" data-type="INSTANT">INSTANT</button>
+</div>
+<div class="variant-tabs">
+  <button class="variant-tab active" data-variant="LITE">LITE</button>
+  <button class="variant-tab" data-variant="PRO">PRO</button>
+</div>
 <div id="plans" class="plan-grid"><div class="plan-loading">Loading available plans…</div></div>
 </main></div>
 <script>
 const plansEl=document.getElementById("plans");
+let allPlans=[], selectedType="2 STEP", selectedVariant="LITE";
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function ruleValue(r,key,field="limit"){return r?.[key]?.[field] ?? null}
 function makeCard(p,i){
@@ -59,16 +76,42 @@ function makeCard(p,i){
    <button class="btn primary choose-plan" data-id="${esc(p.id)}">Choose Plan</button>
  </article>`
 }
+function renderPlans(){
+ const filtered=allPlans.filter(p=>String(p.name||"").toUpperCase()===selectedType+" "+selectedVariant);
+ plansEl.innerHTML=filtered.length?filtered.map(makeCard).join(""):'<div class="plan-empty">No plan available for this option.</div>';
+ document.querySelectorAll(".choose-plan").forEach(btn=>btn.addEventListener("click",()=>{
+   location.href="/user/checkout?plan="+encodeURIComponent(btn.dataset.id);
+ }));
+}
+document.querySelectorAll(".plan-tab").forEach(btn=>btn.addEventListener("click",()=>{
+ selectedType=btn.dataset.type;
+ document.querySelectorAll(".plan-tab").forEach(x=>x.classList.toggle("active",x===btn));
+ const lite=document.querySelector('.variant-tab[data-variant="LITE"]');
+ if(selectedType==="INSTANT"){
+   selectedVariant="PRO";
+   lite.classList.add("hidden");
+   document.querySelector('.variant-tab[data-variant="PRO"]').classList.add("active");
+ }else{
+   lite.classList.remove("hidden");
+   document.querySelectorAll(".variant-tab").forEach(x=>x.classList.toggle("active",x.dataset.variant===selectedVariant));
+ }
+ renderPlans();
+}));
+document.querySelectorAll(".variant-tab").forEach(btn=>btn.addEventListener("click",()=>{
+ if(btn.classList.contains("hidden"))return;
+ selectedVariant=btn.dataset.variant;
+ document.querySelectorAll(".variant-tab").forEach(x=>x.classList.toggle("active",x===btn));
+ renderPlans();
+}));
 async function loadPlans(){
  try{
    const r=await fetch("/api/v1/plans",{credentials:"same-origin",cache:"no-store"});
    const d=await r.json();
    if(!r.ok) throw new Error(d.error||"Unable to load plans");
    if(!d.plans?.length){plansEl.innerHTML='<div class="plan-empty">No active plans are available right now.</div>';return}
-   plansEl.innerHTML=d.plans.map(makeCard).join("");
-   document.querySelectorAll(".choose-plan").forEach(btn=>btn.addEventListener("click",()=>{
-     location.href="/user/checkout?plan="+encodeURIComponent(btn.dataset.id);
-   }));
+   allPlans=d.plans||[];
+   renderPlans();
+ }
  }catch(e){plansEl.innerHTML='<div class="plan-empty">Unable to load plans. Please try again.</div>'}
 }
 loadPlans();
