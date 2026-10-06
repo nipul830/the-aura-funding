@@ -1,0 +1,53 @@
+name: Aura Funding CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Check backend JavaScript
+        run: |
+          node --check backend/src/server.js
+          node --check backend/src/auth.js
+          node --check backend/src/risk/risk-engine.js
+          node --check backend/src/risk/rule-schema.js
+          node --check backend/src/risk/default-rules.js
+          node --check backend/src/admin/risk-rules.js
+          node --check backend/src/admin/risk-rules-api.js
+
+      - name: Check frontend JavaScript
+        run: |
+          node --check frontend/server.js
+
+      - name: Verify required frontend files
+        run: |
+          test -f frontend/public/index.html
+          test -f frontend/public/login.html
+          test -f frontend/public/signup.html
+          test -f frontend/public/admin.html
+          test -f frontend/public/accounts.html
+          test -f frontend/public/style.css
+
+      - name: CI passed
+        run: echo "THE AURA FUNDING validation passed."
