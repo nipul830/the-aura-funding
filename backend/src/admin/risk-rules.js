@@ -19,14 +19,17 @@ export async function getActiveRuleVersion(pool, planId) {
 
 export async function createRuleVersion(pool, { planId, rules = DEFAULT_RULES }) {
   const normalized = normalizeRules(rules);
-
   const client = await pool.connect();
+
   try {
     await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [String(planId)]);
+
     const current = await client.query(
-      "SELECT COALESCE(MAX(version), 0) AS version FROM rule_versions WHERE plan_id = $1 FOR UPDATE",
+      "SELECT COALESCE(MAX(version), 0) AS version FROM rule_versions WHERE plan_id = $1",
       [planId]
     );
+
     const version = nextRuleVersion(current);
     const inserted = await client.query(
       `INSERT INTO rule_versions (plan_id, version, rules)
@@ -34,6 +37,7 @@ export async function createRuleVersion(pool, { planId, rules = DEFAULT_RULES })
        RETURNING id, plan_id, version, rules, created_at`,
       [planId, version, JSON.stringify(normalized)]
     );
+
     await client.query("COMMIT");
     return inserted.rows[0];
   } catch (error) {
