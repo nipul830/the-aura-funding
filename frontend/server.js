@@ -61,5 +61,6 @@ app.get("/user/checkout", requirePageAuth, (req, res) => res.sendFile(path.join(
 app.get("/user/position", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "position.html")));
 app.get("/user/terminal", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "terminal.html")));
 app.get("/user/settings", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "settings.html")));
+app.get("/user/profile", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "profile.html")));
 
 app.listen(port, () => console.log(`The Aura Funding UI listening on :${port}`));
