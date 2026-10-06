@@ -125,6 +125,36 @@ app.get("/api/v1/admin/plans", requireAuth(pool, ["admin"]), async (_req, res) =
   }
 });
 
+app.post("/api/v1/admin/plans", requireAuth(pool, ["admin"]), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { name, account_size, price, currency, active = true, rules = {} } = req.body || {};
+    const planName = String(name || "").trim().toUpperCase();
+    const size = Number(account_size);
+    const numericPrice = Number(price);
+    if (!planName) return res.status(400).json({ ok:false, error:"Plan name is required" });
+    if (!Number.isFinite(size) || size <= 0) return res.status(400).json({ ok:false, error:"Invalid account size" });
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) return res.status(400).json({ ok:false, error:"Invalid plan price" });
+    const normalized = normalizeRules(rules);
+    await client.query("BEGIN");
+    const exists = await client.query("SELECT id FROM challenge_plans WHERE UPPER(name)=$1 AND account_size=$2", [planName, size]);
+    if (exists.rows[0]) { await client.query("ROLLBACK"); return res.status(409).json({ok:false,error:"This plan already exists for this account size"}); }
+    const created = await client.query(
+      "INSERT INTO challenge_plans (name,account_size,price,currency,active) VALUES ($1,$2,$3,$4,$5) RETURNING id,name,account_size,price,currency,active",
+      [planName,size,numericPrice,String(currency||"USD").trim().toUpperCase(),active !== false]
+    );
+    const ruleRow = await client.query(
+      "INSERT INTO rule_versions (plan_id,version,rules) VALUES ($1,1,$2::jsonb) RETURNING id,version,rules",
+      [created.rows[0].id,JSON.stringify(normalized)]
+    );
+    await client.query("COMMIT");
+    res.status(201).json({ok:true,plan:{...created.rows[0],rule_version:ruleRow.rows[0].version,rules:ruleRow.rows[0].rules}});
+  } catch(error) {
+    await client.query("ROLLBACK");
+    res.status(400).json({ok:false,error:error.message});
+  } finally { client.release(); }
+});
+
 app.patch("/api/v1/admin/plans/:id", requireAuth(pool, ["admin"]), async (req, res) => {
   const client = await pool.connect();
   try {
