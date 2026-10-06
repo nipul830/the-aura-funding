@@ -66,3 +66,17 @@
   .card{padding:16px}
   .metric{font-size:24px}
 }
+
+.top-actions{display:flex;align-items:center;gap:10px}
+.login-page{min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top,#151b25 0,#07090d 55%)}
+.login-shell{width:min(430px,100%);padding:20px}
+.login-card{background:rgba(13,17,24,.96);border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.login-brand{font-weight:900;letter-spacing:1.5px;font-size:18px;margin-bottom:34px}
+.login-brand span{color:var(--accent)}
+.login-card h1{font-size:30px;margin:0 0 7px}
+.login-card form{display:grid;gap:16px;margin-top:24px}
+.login-card .field{font-size:13px}
+.login-card .field input{padding:13px 14px;font-size:15px}
+.login-btn{width:100%;padding:13px}
+.login-error{min-height:20px;color:var(--red);font-size:13px}
+@media(max-width:600px){.top-actions{width:100%;justify-content:space-between}.top-actions .pill{font-size:13px}}
