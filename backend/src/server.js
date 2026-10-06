@@ -5,7 +5,7 @@ import cors from "cors";
 import { Pool } from "pg";
 import { evaluateRisk } from "./risk/risk-engine.js";
 import { riskRulesRouter } from "./admin/risk-rules-api.js";
-import { ensureAdmin, register, login, logout, getSessionUser, readSessionCookie, setSessionCookie, clearSessionCookie, requireAuth } from "./auth.js";
+import { ensureAdmin, register, login, logout, getSessionUser, getProfile, updateProfile, readSessionCookie, setSessionCookie, clearSessionCookie, requireAuth } from "./auth.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -57,6 +57,25 @@ app.post("/api/v1/auth/logout", async (req, res) => {
     res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+app.get("/api/v1/auth/profile", requireAuth(pool), async (req, res) => {
+  try {
+    const user = await getProfile(pool, req.user.id);
+    if (!user) return res.status(404).json({ ok: false, error: "Profile not found" });
+    res.json({ ok: true, user });
+  } catch (error) { res.status(500).json({ ok: false, error: error.message }); }
+});
+
+app.patch("/api/v1/auth/profile", requireAuth(pool), async (req, res) => {
+  try {
+    const user = await updateProfile(pool, req.user.id, req.body || {});
+    if (!user) return res.status(404).json({ ok: false, error: "Profile not found" });
+    res.json({ ok: true, user });
+  } catch (error) {
+    const status = error.message.includes("already taken") ? 409 : 400;
+    res.status(status).json({ ok: false, error: error.message });
   }
 });
 
