@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profile · THE AURA FUNDING</title><link rel="stylesheet" href="/style.css"></head>
+<body><div class="app"><aside class="side"><div class="brand">THE AURA <span>FUNDING</span></div><nav class="nav"><a href="/user">Dashboard</a><a href="/user/plans">Plans</a><a href="/user/terminal">Terminal</a><a class="active" href="/user/settings">Settings</a></nav></aside>
+<main class="main"><div class="top"><div class="title"><h1>Profile</h1><div class="muted">Manage your account details.</div></div><a class="btn" href="/user">Dashboard</a></div>
+<section class="profile-card"><div class="profile-head"><div class="profile-avatar" id="avatar">A</div><div><h2 id="profileName">Your Profile</h2><div class="muted" id="profileEmail"></div></div></div>
+<form id="profileForm" class="profile-form"><label class="field">Full Name<input id="fullName" required></label><label class="field">Username<input id="username" placeholder="Choose a username"></label><label class="field">Phone Number<input id="phone" type="tel" placeholder="+91XXXXXXXXXX"></label><div class="profile-email muted">Email: <span id="emailText"></span><small>Email cannot be changed here.</small></div><button class="btn primary" type="submit">Save Profile</button><div id="profileMessage" class="login-success"></div></form></section>
+<section class="profile-card certificate-card"><div><h2>Generate NFT Certificate</h2><p class="muted">Certificate generation will be available soon.</p></div><button class="btn" id="certificateBtn" type="button">Generate NFT Certificate</button><div id="certificateMessage" class="login-success"></div></section>
+<section class="profile-card logout-card"><h2>Account</h2><p class="muted">Sign out from this device.</p><button class="btn danger-btn" id="logoutBtn" type="button">Logout</button></section>
+</main></div>
+<script>
+const form=document.getElementById("profileForm"),msg=document.getElementById("profileMessage");
+async function loadProfile(){const r=await fetch("/api/v1/auth/profile");const d=await r.json();if(!r.ok){location.href="/login";return}const u=d.user;fullName.value=u.fullName||"";username.value=u.username||"";phone.value=u.phone||"";profileName.textContent=u.fullName||"Your Profile";profileEmail.textContent=u.email;emailText.textContent=u.email;avatar.textContent=(u.fullName||u.email||"A").charAt(0).toUpperCase()}
+form.addEventListener("submit",async e=>{e.preventDefault();msg.textContent="Saving…";const r=await fetch("/api/v1/auth/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName:fullName.value,username:username.value,phone:phone.value})});const d=await r.json();msg.textContent=r.ok?"Profile saved successfully.":(d.error||"Unable to save profile.");if(r.ok)loadProfile()});
+certificateBtn.addEventListener("click",()=>certificateMessage.textContent="NFT Certificate generation is coming soon.");
+logoutBtn.addEventListener("click",async()=>{await fetch("/api/v1/auth/logout",{method:"POST"});location.href="/";});loadProfile();
+</script></body></html>
