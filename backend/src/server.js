@@ -104,6 +104,88 @@ app.get("/api/v1/plans", async (_req, res) => {
   }
 });
 
+
+app.get("/api/v1/public/content", async (_req,res)=>{
+  try{
+    const [faq,stories,contact]=await Promise.all([
+      pool.query("SELECT id,question,answer FROM site_faq WHERE active=true ORDER BY sort_order ASC,created_at DESC"),
+      pool.query("SELECT id,name,account_type,profit_amount,image_url,quote FROM success_stories WHERE active=true ORDER BY sort_order ASC,created_at DESC"),
+      pool.query("SELECT support_email,whatsapp_url,telegram_url,contact_text FROM site_contact_settings WHERE id=1")
+    ]);
+    res.json({ok:true,faq:faq.rows,stories:stories.rows,contact:contact.rows[0]||{support_email:"joker007llp@gmail.com",whatsapp_url:"",telegram_url:"",contact_text:"Need help? Contact our support team."}});
+  }catch(error){res.status(500).json({ok:false,error:error.message});}
+});
+
+app.get("/api/v1/admin/content", requireAuth(pool,["admin"]), async (_req,res)=>{
+  try{
+    const [faq,stories,contact]=await Promise.all([
+      pool.query("SELECT * FROM site_faq ORDER BY sort_order ASC,created_at DESC"),
+      pool.query("SELECT * FROM success_stories ORDER BY sort_order ASC,created_at DESC"),
+      pool.query("SELECT * FROM site_contact_settings WHERE id=1")
+    ]);
+    res.json({ok:true,faq:faq.rows,stories:stories.rows,contact:contact.rows[0]||{}});
+  }catch(error){res.status(500).json({ok:false,error:error.message});}
+});
+
+app.post("/api/v1/admin/content/faq", requireAuth(pool,["admin"]), async (req,res)=>{
+  try{
+    const q=String(req.body?.question||"").trim(), a=String(req.body?.answer||"").trim();
+    if(!q||!a) return res.status(400).json({ok:false,error:"Question and answer are required"});
+    const row=await pool.query("INSERT INTO site_faq(question,answer,active,sort_order) VALUES($1,$2,$3,$4) RETURNING *",[q,a,req.body?.active!==false,Number(req.body?.sort_order||0)]);
+    res.status(201).json({ok:true,item:row.rows[0]});
+  }catch(error){res.status(400).json({ok:false,error:error.message});}
+});
+
+app.patch("/api/v1/admin/content/faq/:id", requireAuth(pool,["admin"]), async (req,res)=>{
+  try{
+    const q=String(req.body?.question||"").trim(), a=String(req.body?.answer||"").trim();
+    if(!q||!a) return res.status(400).json({ok:false,error:"Question and answer are required"});
+    const row=await pool.query("UPDATE site_faq SET question=$1,answer=$2,active=$3,sort_order=$4,updated_at=now() WHERE id=$5 RETURNING *",[q,a,req.body?.active!==false,Number(req.body?.sort_order||0),req.params.id]);
+    if(!row.rows[0]) return res.status(404).json({ok:false,error:"FAQ not found"});
+    res.json({ok:true,item:row.rows[0]});
+  }catch(error){res.status(400).json({ok:false,error:error.message});}
+});
+
+app.delete("/api/v1/admin/content/faq/:id", requireAuth(pool,["admin"]), async (req,res)=>{
+  try{await pool.query("DELETE FROM site_faq WHERE id=$1",[req.params.id]);res.json({ok:true});}
+  catch(error){res.status(400).json({ok:false,error:error.message});}
+});
+
+app.post("/api/v1/admin/content/story", requireAuth(pool,["admin"]), async (req,res)=>{
+  try{
+    const name=String(req.body?.name||"").trim(), account=String(req.body?.account_type||"").trim();
+    if(!name) return res.status(400).json({ok:false,error:"Name is required"});
+    const row=await pool.query("INSERT INTO success_stories(name,account_type,profit_amount,image_url,quote,active,sort_order) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",
+      [name,account,Number(req.body?.profit_amount||0),String(req.body?.image_url||"").trim(),String(req.body?.quote||"").trim(),req.body?.active!==false,Number(req.body?.sort_order||0)]);
+    res.status(201).json({ok:true,item:row.rows[0]});
+  }catch(error){res.status(400).json({ok:false,error:error.message});}
+});
+
+app.patch("/api/v1/admin/content/story/:id", requireAuth(pool,["admin"]), async (req,res)=>{
+  try{
+    const name=String(req.body?.name||"").trim();
+    if(!name) return res.status(400).json({ok:false,error:"Name is required"});
+    const row=await pool.query("UPDATE success_stories SET name=$1,account_type=$2,profit_amount=$3,image_url=$4,quote=$5,active=$6,sort_order=$7,updated_at=now() WHERE id=$8 RETURNING *",
+      [name,String(req.body?.account_type||"").trim(),Number(req.body?.profit_amount||0),String(req.body?.image_url||"").trim(),String(req.body?.quote||"").trim(),req.body?.active!==false,Number(req.body?.sort_order||0),req.params.id]);
+    if(!row.rows[0]) return res.status(404).json({ok:false,error:"Story not found"});
+    res.json({ok:true,item:row.rows[0]});
+  }catch(error){res.status(400).json({ok:false,error:error.message});}
+});
+
+app.delete("/api/v1/admin/content/story/:id", requireAuth(pool,["admin"]), async (req,res)=>{
+  try{await pool.query("DELETE FROM success_stories WHERE id=$1",[req.params.id]);res.json({ok:true});}
+  catch(error){res.status(400).json({ok:false,error:error.message});}
+});
+
+app.patch("/api/v1/admin/content/contact", requireAuth(pool,["admin"]), async (req,res)=>{
+  try{
+    const email=String(req.body?.support_email||"joker007llp@gmail.com").trim()||"joker007llp@gmail.com";
+    const wa=String(req.body?.whatsapp_url||"").trim(), tg=String(req.body?.telegram_url||"").trim(), text=String(req.body?.contact_text||"Need help? Contact our support team.").trim();
+    const row=await pool.query("INSERT INTO site_contact_settings(id,support_email,whatsapp_url,telegram_url,contact_text) VALUES(1,$1,$2,$3,$4) ON CONFLICT(id) DO UPDATE SET support_email=$1,whatsapp_url=$2,telegram_url=$3,contact_text=$4,updated_at=now() RETURNING *",[email,wa,tg,text]);
+    res.json({ok:true,contact:row.rows[0]});
+  }catch(error){res.status(400).json({ok:false,error:error.message});}
+});
+
 app.get("/api/v1/admin/plans", requireAuth(pool, ["admin"]), async (_req, res) => {
   try {
     const result = await pool.query(
