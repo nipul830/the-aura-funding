@@ -102,3 +102,5 @@
 .eye-btn{font-family:Arial,sans-serif;font-size:17px;color:#8b95a7}.eye-btn:active{transform:translateY(-50%) scale(.95)}
 
 .login-success{min-height:20px;color:var(--green);font-size:13px}
+
+.profile-chip{display:inline-flex;align-items:center;gap:9px;padding:8px 12px;border:1px solid var(--line);border-radius:22px;background:var(--panel);color:#fff;text-decoration:none;font-weight:650}.profile-chip .avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#090b0f;font-weight:900}.profile-chip:hover{border-color:#394250}
