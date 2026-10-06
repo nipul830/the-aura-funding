@@ -55,20 +55,21 @@
 
 <footer class="public-footer"><div class="public-brand"><span>THE AURA</span> FUNDING</div><div>© 2026 THE AURA FUNDING</div><div><a href="/login">Login</a></div></footer>
 <script>
-(async()=>{
-  try{
-    const r=await fetch("/api/v1/auth/me",{method:"GET",credentials:"same-origin",cache:"no-store"});
-    if(!r.ok)return;
-    const d=await r.json();
-    if(!d?.user)return;
-    const u=d.user;
+(()=>{
+  const renderAccount=(u)=>{
+    if(!u)return;
     const name=(u.fullName||u.full_name||u.username||u.email||"Account").trim();
     const first=name.split(/\s+/)[0]||"Account";
     const target=u.role==="admin"?"/admin":"/user/profile";
-    document.getElementById("publicAccount").innerHTML=`<a class="profile-chip" href="${target}"><span class="avatar">${first.charAt(0).toUpperCase()}</span><span>${first}</span></a>`;
+    const account=document.getElementById("publicAccount");
+    if(account) account.innerHTML=`<a class="profile-chip" href="${target}"><span class="avatar">${first.charAt(0).toUpperCase()}</span><span>${first}</span></a>`;
     const b=document.getElementById("heroAccountBtn");
     if(b){b.href=u.role==="admin"?"/admin":"/user";b.textContent="Dashboard";}
-  }catch{}
+  };
+  try{const cached=JSON.parse(localStorage.getItem("aura_user")||"null");renderAccount(cached)}catch{}
+  fetch("/api/v1/auth/me",{credentials:"same-origin",cache:"no-store"})
+    .then(r=>r.ok?r.json():null).then(d=>{if(d?.user){localStorage.setItem("aura_user",JSON.stringify(d.user));renderAccount(d.user)}})
+    .catch(()=>{});
 })();
 </script></body>
 </html>
