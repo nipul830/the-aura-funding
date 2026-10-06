@@ -73,6 +73,7 @@ function adminPage(file) {
 
 app.get("/admin", requirePageAuth, adminPage("admin.html"));
 app.get("/admin/accounts", requirePageAuth, adminPage("accounts.html"));
+app.get("/admin/plans", requirePageAuth, adminPage("admin-plans.html"));
 app.get("/user", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "user.html")));
 app.get("/user/trading", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "trading.html")));
 app.get("/user/plans", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "plans.html")));
