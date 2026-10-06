@@ -37,7 +37,7 @@ CREATE TABLE trading_accounts (
   initial_balance NUMERIC(20,2) NOT NULL CHECK (initial_balance > 0),
   balance NUMERIC(20,2) NOT NULL,
   equity NUMERIC(20,2) NOT NULL,
-  status TEXT NOT NULL DEFAULT 'active'
+  status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending','active','passed','breached','suspended')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -51,10 +51,14 @@ CREATE TABLE orders (
   side TEXT NOT NULL CHECK (side IN ('buy','sell')),
   quantity NUMERIC(30,10) NOT NULL CHECK (quantity > 0),
   order_type TEXT NOT NULL CHECK (order_type IN ('market','limit','stop')),
-  status TEXT NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(account_id, client_order_id)
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending','accepted','rejected','filled','cancelled')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX uq_orders_client_id
+  ON orders(account_id, client_order_id)
+  WHERE client_order_id IS NOT NULL;
 
 CREATE TABLE positions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
