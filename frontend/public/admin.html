@@ -17,7 +17,7 @@ async function loadAdminPlans(){
     <h3>${p.name}</h3><div class="muted">${Number(p.account_size).toLocaleString()}</div>
     <div class="admin-row"><label>Price<input class="p-price" type="number" min="0" step="0.01" value="${p.price}"></label>
     <label>Status<select class="p-active"><option value="true" ${p.active?"selected":""}>Active</option><option value="false" ${!p.active?"selected":""}>Hidden</option></select></label></div>
-    <div class="rule-summary">Daily DD <b>${dd}%</b> · Max DD <b>${md}%</b> · Target <b>${x.profitTarget?.enabled===false?"—":pt+"%"}</b> · Floating <b>${fl}%</b></div>
+    <div class="admin-row"><label>Daily DD %<input class="r-dd" type="number" min="0" step="0.1" value="${dd}"></label><label>Max DD %<input class="r-md" type="number" min="0" step="0.1" value="${md}"></label></div><div class="admin-row"><label>Profit Target %<input class="r-pt" type="number" min="0" step="0.1" value="${pt}"></label><label>Floating Loss %<input class="r-fl" type="number" min="0" step="0.1" value="${fl}"></label></div>
     <button class="btn primary save-plan">Save Plan</button><div class="muted save-msg"></div>
    </article>`
   }).join("");
@@ -25,6 +25,12 @@ async function loadAdminPlans(){
    const card=btn.closest(".admin-plan"),id=card.dataset.id,msg=card.querySelector(".save-msg");
    const current=d.plans.find(x=>x.id===id),rules=current.rules||{};
    const price=Number(card.querySelector(".p-price").value),active=card.querySelector(".p-active").value==="true";
+   const rules=structuredClone(current.rules||{});
+   rules.dailyDrawdown={...(rules.dailyDrawdown||{}),enabled:true,mode:"percent",limit:Number(card.querySelector(".r-dd").value),basis:"start_of_day_equity",action:"BREACH_ACCOUNT"};
+   rules.maxDrawdown={...(rules.maxDrawdown||{}),enabled:true,mode:"percent",limit:Number(card.querySelector(".r-md").value),basis:"initial_balance",type:"static",action:"BREACH_ACCOUNT"};
+   rules.floatingLoss={...(rules.floatingLoss||{}),enabled:true,mode:"percent",limit:Number(card.querySelector(".r-fl").value),action:"CLOSE_POSITIONS"};
+   const target=Number(card.querySelector(".r-pt").value);
+   rules.profitTarget={...(rules.profitTarget||{}),enabled:target>0,mode:"percent",target,action:"PASS_ACCOUNT"};
    msg.textContent="Saving…";
    const rr=await fetch("/api/v1/admin/plans/"+encodeURIComponent(id),{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:current.name,price,currency:current.currency||"USD",active,rules})});
    const rd=await rr.json();msg.textContent=rr.ok?"Saved successfully.":(rd.error||"Save failed.");
