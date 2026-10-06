@@ -21,7 +21,7 @@
     <div class="public-badge"><span></span> BUILT FOR SERIOUS TRADERS</div>
     <h1>Trade with capital.<br><em>Keep your edge.</em></h1>
     <p>Pass a clear challenge, follow simple risk rules and unlock a funded trading account with THE AURA FUNDING.</p>
-    <div class="hero-buttons"><a class="btn primary big" href="/user/plans">Get Funded</a><a class="btn big" href="/login">Login</a></div>
+    <div class="hero-buttons"><a class="btn primary big" href="/user/plans">Get Funded</a><a class="btn big" id="heroAccountBtn" href="/login">Login</a></div>
     <div class="hero-note">Transparent rules · Fast evaluation · Professional trading environment</div>
   </div>
   <div class="hero-card">
@@ -54,5 +54,5 @@
 </main>
 
 <footer class="public-footer"><div class="public-brand"><span>THE AURA</span> FUNDING</div><div>© 2026 THE AURA FUNDING</div><div><a href="/login">Login</a></div></footer>
-<script>fetch("/api/v1/auth/me").then(r=>r.ok?r.json():null).then(d=>{if(!d?.user)return;const u=d.user;const label=(u.fullName||u.email||"Account").split(" ")[0];document.getElementById("publicAccount").innerHTML=`<a class="profile-chip" href="${u.role==="admin"?"/admin":"/user"}"><span class="avatar">${label.charAt(0).toUpperCase()}</span><span>${label}</span></a>`}).catch(()=>{});</script></body>
+<script>fetch("/api/v1/auth/me").then(r=>r.ok?r.json():null).then(d=>{if(!d?.user)return;const u=d.user;const label=(u.fullName||u.email||"Account").split(" ")[0];document.getElementById("publicAccount").innerHTML=`<a class="profile-chip" href="${u.role==="admin"?"/admin":"/user/profile"}"><span class="avatar">${label.charAt(0).toUpperCase()}</span><span>${label}</span></a>`;const b=document.getElementById("heroAccountBtn");if(b){b.href=u.role==="admin"?"/admin":"/user";b.textContent="Dashboard";}}).catch(()=>{});</script></body>
 </html>
