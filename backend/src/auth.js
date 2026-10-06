@@ -163,10 +163,11 @@ export async function getProfile(pool, userId) {
 
 export async function updateProfile(pool, userId, { fullName, username, phone }) {
   const name = String(fullName || "").trim();
-  const handle = String(username || "").trim();
+  const rawHandle = String(username || "").trim();
+  const handle = rawHandle.replace(/^@+/, "");
   const mobile = String(phone || "").trim();
   if (name.length < 2) throw new Error("Please enter your full name");
-  if (handle && !/^[a-zA-Z0-9_.-]{3,30}$/.test(handle)) throw new Error("Username must be 3-30 characters");
+  if (handle && !/^[a-zA-Z0-9_.-]{3,30}$/.test(handle)) throw new Error("Username must be 3-30 characters (letters, numbers, _, ., -)");
   if (handle) {
     const taken = await pool.query("SELECT id FROM users WHERE lower(username)=lower($1) AND id<>$2 LIMIT 1", [handle, userId]);
     if (taken.rows[0]) throw new Error("Username is already taken");
