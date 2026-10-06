@@ -1,1 +1,76 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Plans · THE AURA FUNDING</title><link rel="stylesheet" href="/style.css"></head><body><div class="app"><aside class="side"><div class="brand">THE AURA <span>FUNDING</span></div><nav class="nav"><a href="/">Home</a><a class="" href="/user">Dashboard</a><a class="active" href="/user/plans">Plans</a><a class="" href="/user/terminal">Terminal</a><a class="" href="/user/settings">Settings</a></nav></aside><main class="main"><div class="top"><div class="title"><h1>Plans</h1><div class="muted">Choose your challenge account</div></div></div><div class="plans"><div class="plan"><div class="muted">STARTER</div><div class="price">$5K</div><ul class="list"><li>4% Daily Drawdown</li><li>8% Maximum Drawdown</li><li>8% Profit Target</li></ul><button class="btn primary">Choose Plan</button></div><div class="plan"><div class="muted">PRO</div><div class="price">$10K</div><ul class="list"><li>4% Daily Drawdown</li><li>8% Maximum Drawdown</li><li>10% Profit Target</li></ul><button class="btn primary">Choose Plan</button></div><div class="plan"><div class="muted">ELITE</div><div class="price">$25K</div><ul class="list"><li>4% Daily Drawdown</li><li>8% Maximum Drawdown</li><li>10% Profit Target</li></ul><button class="btn primary">Choose Plan</button></div></div></main></div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plans · THE AURA FUNDING</title><link rel="stylesheet" href="/style.css">
+<style>
+.plan-page{max-width:1180px}
+.plan-intro{margin-bottom:26px}
+.plan-intro h2{margin:0 0 8px;font-size:28px}
+.plan-intro p{margin:0}
+.plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.plan-card{position:relative;display:flex;flex-direction:column;min-height:440px;padding:24px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,#111722,#0b0f16)}
+.plan-card.featured{border-color:#f5b72c;box-shadow:0 0 0 1px rgba(245,183,44,.15)}
+.plan-badge{position:absolute;right:18px;top:18px;padding:6px 10px;border-radius:999px;background:#f5b72c;color:#090b0f;font-size:11px;font-weight:800}
+.plan-name{font-size:13px;letter-spacing:.14em;color:var(--muted);font-weight:800}
+.plan-size{font-size:42px;font-weight:850;margin:18px 0 4px}
+.plan-price{font-size:24px;font-weight:800;color:var(--accent);min-height:34px}
+.plan-price small{font-size:13px;color:var(--muted);font-weight:500}
+.plan-rule-list{list-style:none;padding:0;margin:26px 0;display:grid;gap:12px;flex:1}
+.plan-rule-list li{display:flex;justify-content:space-between;gap:16px;padding-bottom:10px;border-bottom:1px solid var(--line);font-size:14px}
+.plan-rule-list b{color:var(--text)}
+.plan-loading,.plan-empty{padding:28px;border:1px dashed var(--line);border-radius:16px;color:var(--muted)}
+@media(max-width:900px){.plan-grid{grid-template-columns:1fr}.plan-card{min-height:390px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side"><div class="brand">THE AURA <span>FUNDING</span></div>
+<nav class="nav"><a href="/">Home</a><a href="/user">Dashboard</a><a class="active" href="/user/plans">Plans</a><a href="/user/terminal">Terminal</a><a href="/user/settings">Settings</a></nav></aside>
+<main class="main plan-page">
+<div class="top"><div class="title"><h1>Challenge Plans</h1><div class="muted">Choose the account size that fits your trading style.</div></div><a class="profile-chip" href="/user/profile"><span class="avatar">A</span><span>Profile</span></a></div>
+<div class="plan-intro"><h2>Pick your challenge</h2><p class="muted">Your selected plan will be carried into checkout. Risk rules are controlled server-side.</p></div>
+<div id="plans" class="plan-grid"><div class="plan-loading">Loading available plans…</div></div>
+</main></div>
+<script>
+const plansEl=document.getElementById("plans");
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function ruleValue(r,key,field="limit"){return r?.[key]?.[field] ?? null}
+function makeCard(p,i){
+ const r=p.rules||{};
+ const size=Number(p.account_size||0);
+ const price=Number(p.price||0);
+ const currency=p.currency||"USD";
+ const target=ruleValue(r,"profitTarget","target");
+ const daily=ruleValue(r,"dailyDrawdown");
+ const max=ruleValue(r,"maxDrawdown");
+ const floating=ruleValue(r,"floatingLoss");
+ return `<article class="plan-card ${i===1?"featured":""}">
+   ${i===1?'<div class="plan-badge">POPULAR</div>':""}
+   <div class="plan-name">${esc(p.name||"CHALLENGE")}</div>
+   <div class="plan-size">$${size.toLocaleString("en-US",{maximumFractionDigits:0})}</div>
+   <div class="plan-price">${price>0?esc(currency)+" "+price.toLocaleString("en-US",{maximumFractionDigits:2}):"Pricing set by admin"} ${price>0?'<small>challenge fee</small>':""}</div>
+   <ul class="plan-rule-list">
+     <li><span>Daily Drawdown</span><b>${daily!=null?daily+"%":"—"}</b></li>
+     <li><span>Maximum Drawdown</span><b>${max!=null?max+"%":"—"}</b></li>
+     <li><span>Profit Target</span><b>${target!=null?target+"%":"—"}</b></li>
+     <li><span>Rule Version</span><b>${p.rule_version?("v"+p.rule_version):"Default"}</b></li>
+   </ul>
+   <button class="btn primary choose-plan" data-id="${esc(p.id)}">Choose Plan</button>
+ </article>`
+}
+async function loadPlans(){
+ try{
+   const r=await fetch("/api/v1/plans",{credentials:"same-origin",cache:"no-store"});
+   const d=await r.json();
+   if(!r.ok) throw new Error(d.error||"Unable to load plans");
+   if(!d.plans?.length){plansEl.innerHTML='<div class="plan-empty">No active plans are available right now.</div>';return}
+   plansEl.innerHTML=d.plans.map(makeCard).join("");
+   document.querySelectorAll(".choose-plan").forEach(btn=>btn.addEventListener("click",()=>{
+     location.href="/user/checkout?plan="+encodeURIComponent(btn.dataset.id);
+   }));
+ }catch(e){plansEl.innerHTML='<div class="plan-empty">Unable to load plans. Please try again.</div>'}
+}
+loadPlans();
+</script>
+</body></html>
