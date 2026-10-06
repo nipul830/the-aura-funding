@@ -149,3 +149,33 @@ export function requireAuth(pool, roles = []) {
 }
 
 export { COOKIE };
+
+
+export async function getProfile(pool, userId) {
+  const result = await pool.query(
+    "SELECT id, email, full_name, username, phone, role, status, created_at FROM users WHERE id = $1 LIMIT 1",
+    [userId]
+  );
+  const user = result.rows[0];
+  if (!user) return null;
+  return { ...user, fullName: user.full_name };
+}
+
+export async function updateProfile(pool, userId, { fullName, username, phone }) {
+  const name = String(fullName || "").trim();
+  const handle = String(username || "").trim();
+  const mobile = String(phone || "").trim();
+  if (name.length < 2) throw new Error("Please enter your full name");
+  if (handle && !/^[a-zA-Z0-9_.-]{3,30}$/.test(handle)) throw new Error("Username must be 3-30 characters");
+  if (handle) {
+    const taken = await pool.query("SELECT id FROM users WHERE lower(username)=lower($1) AND id<>$2 LIMIT 1", [handle, userId]);
+    if (taken.rows[0]) throw new Error("Username is already taken");
+  }
+  const result = await pool.query(
+    "UPDATE users SET full_name=$1, username=NULLIF($2,''), phone=NULLIF($3,''), updated_at=now() WHERE id=$4 RETURNING id,email,full_name,username,phone,role,status,created_at",
+    [name, handle, mobile, userId]
+  );
+  const user = result.rows[0];
+  if (!user) return null;
+  return { ...user, fullName: user.full_name };
+}
