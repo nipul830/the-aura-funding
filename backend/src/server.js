@@ -32,6 +32,7 @@ app.post("/api/v1/auth/register", async (req, res) => {
   try {
     const result = await register(pool, req.body?.fullName, req.body?.email, req.body?.password);
     setSessionCookie(res, result.token);
+    res.setHeader("X-Aura-Session-Token", result.token);
     res.status(201).json({ ok: true, user: result.user });
   } catch (error) {
     const status = error.message.includes("already exists") ? 409 : 400;
@@ -44,6 +45,7 @@ app.post("/api/v1/auth/login", async (req, res) => {
     const result = await login(pool, req.body?.email, req.body?.password);
     if (!result) return res.status(401).json({ ok: false, error: "Invalid email or password" });
     setSessionCookie(res, result.token);
+    res.setHeader("X-Aura-Session-Token", result.token);
     res.json({ ok: true, user: result.user });
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message });
