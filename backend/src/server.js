@@ -5,7 +5,7 @@ import cors from "cors";
 import { Pool } from "pg";
 import { evaluateRisk } from "./risk/risk-engine.js";
 import { riskRulesRouter } from "./admin/risk-rules-api.js";
-import { ensureAdmin, login, logout, getSessionUser, readSessionCookie, setSessionCookie, clearSessionCookie, requireAuth } from "./auth.js";
+import { ensureAdmin, register, login, logout, getSessionUser, readSessionCookie, setSessionCookie, clearSessionCookie, requireAuth } from "./auth.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -26,6 +26,17 @@ app.get("/health", async (_req, res) => {
 
 app.get("/api/v1", (_req, res) => {
   res.json({ service: "The Aura Funding API", version: "v1" });
+});
+
+app.post("/api/v1/auth/register", async (req, res) => {
+  try {
+    const result = await register(pool, req.body?.fullName, req.body?.email, req.body?.password);
+    setSessionCookie(res, result.token);
+    res.status(201).json({ ok: true, user: result.user });
+  } catch (error) {
+    const status = error.message.includes("already exists") ? 409 : 400;
+    res.status(status).json({ ok: false, error: error.message });
+  }
 });
 
 app.post("/api/v1/auth/login", async (req, res) => {
