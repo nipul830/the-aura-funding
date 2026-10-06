@@ -95,12 +95,66 @@ app.get("/api/v1/plans", async (_req, res) => {
          LIMIT 1
        ) r ON true
        WHERE p.active = true
-       ORDER BY p.account_size ASC`
+       ORDER BY p.account_size ASC, p.name ASC`
     );
     res.json({ ok: true, plans: result.rows });
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message });
   }
+});
+
+app.get("/api/v1/admin/plans", requireAuth(pool, ["admin"]), async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.name, p.account_size, p.price, p.currency, p.active,
+              r.version AS rule_version, r.rules
+       FROM challenge_plans p
+       LEFT JOIN LATERAL (
+         SELECT version, rules
+         FROM rule_versions
+         WHERE plan_id = p.id
+         ORDER BY version DESC
+         LIMIT 1
+       ) r ON true
+       ORDER BY p.account_size ASC, p.name ASC`
+    );
+    res.json({ ok: true, plans: result.rows });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+app.patch("/api/v1/admin/plans/:id", requireAuth(pool, ["admin"]), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { name, price, currency, active, rules } = req.body || {};
+    const numericPrice = Number(price);
+    if (!String(name || "").trim()) return res.status(400).json({ ok:false, error:"Plan name is required" });
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) return res.status(400).json({ ok:false, error:"Invalid plan price" });
+    await client.query("BEGIN");
+    const updated = await client.query(
+      `UPDATE challenge_plans
+       SET name=$1, price=$2, currency=$3, active=$4
+       WHERE id=$5
+       RETURNING id,name,account_size,price,currency,active`,
+      [String(name).trim(), numericPrice, String(currency || "USD").trim().toUpperCase(), active !== false, req.params.id]
+    );
+    if (!updated.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ok:false,error:"Plan not found"}); }
+    if (rules && typeof rules === "object") {
+      const normalized = normalizeRules(rules);
+      const current = await client.query("SELECT COALESCE(MAX(version),0) AS version FROM rule_versions WHERE plan_id=$1", [req.params.id]);
+      const version = Number(current.rows[0].version || 0) + 1;
+      await client.query(
+        "INSERT INTO rule_versions (plan_id,version,rules) VALUES ($1,$2,$3::jsonb)",
+        [req.params.id, version, JSON.stringify(normalized)]
+      );
+    }
+    await client.query("COMMIT");
+    res.json({ok:true, plan:updated.rows[0]});
+  } catch (error) {
+    await client.query("ROLLBACK");
+    res.status(400).json({ok:false,error:error.message});
+  } finally { client.release(); }
 });
 
 app.get("/api/v1/auth/me", async (req, res) => {
