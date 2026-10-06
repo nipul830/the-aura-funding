@@ -4,6 +4,7 @@ import helmet from "helmet";
 import cors from "cors";
 import { Pool } from "pg";
 import { evaluateRisk } from "./risk/risk-engine.js";
+import { normalizeRules } from "./risk/rule-schema.js";
 import { riskRulesRouter } from "./admin/risk-rules-api.js";
 import { ensureAdmin, register, login, logout, getSessionUser, getProfile, updateProfile, readSessionCookie, setSessionCookie, clearSessionCookie, requireAuth } from "./auth.js";
 
