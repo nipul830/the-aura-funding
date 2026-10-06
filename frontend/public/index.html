@@ -54,5 +54,21 @@
 </main>
 
 <footer class="public-footer"><div class="public-brand"><span>THE AURA</span> FUNDING</div><div>© 2026 THE AURA FUNDING</div><div><a href="/login">Login</a></div></footer>
-<script>fetch("/api/v1/auth/me").then(r=>r.ok?r.json():null).then(d=>{if(!d?.user)return;const u=d.user;const label=(u.fullName||u.email||"Account").split(" ")[0];document.getElementById("publicAccount").innerHTML=`<a class="profile-chip" href="${u.role==="admin"?"/admin":"/user/profile"}"><span class="avatar">${label.charAt(0).toUpperCase()}</span><span>${label}</span></a>`;const b=document.getElementById("heroAccountBtn");if(b){b.href=u.role==="admin"?"/admin":"/user";b.textContent="Dashboard";}}).catch(()=>{});</script></body>
+<script>
+(async()=>{
+  try{
+    const r=await fetch("/api/v1/auth/me",{method:"GET",credentials:"same-origin",cache:"no-store"});
+    if(!r.ok)return;
+    const d=await r.json();
+    if(!d?.user)return;
+    const u=d.user;
+    const name=(u.fullName||u.full_name||u.username||u.email||"Account").trim();
+    const first=name.split(/\s+/)[0]||"Account";
+    const target=u.role==="admin"?"/admin":"/user/profile";
+    document.getElementById("publicAccount").innerHTML=`<a class="profile-chip" href="${target}"><span class="avatar">${first.charAt(0).toUpperCase()}</span><span>${first}</span></a>`;
+    const b=document.getElementById("heroAccountBtn");
+    if(b){b.href=u.role==="admin"?"/admin":"/user";b.textContent="Dashboard";}
+  }catch{}
+})();
+</script></body>
 </html>
