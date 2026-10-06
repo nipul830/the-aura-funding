@@ -18,8 +18,10 @@ app.all("/api/*splat", async (req, res) => {
     if (!["GET", "HEAD"].includes(req.method)) init.body = JSON.stringify(req.body || {});
     const upstream = await fetch(target, init);
     res.status(upstream.status);
-    const setCookie = upstream.headers.get("set-cookie");
-    if (setCookie) res.setHeader("Set-Cookie", setCookie);
+    const setCookies = typeof upstream.headers.getSetCookie === "function"
+      ? upstream.headers.getSetCookie()
+      : (upstream.headers.get("set-cookie") ? [upstream.headers.get("set-cookie")] : []);
+    if (setCookies.length) res.setHeader("Set-Cookie", setCookies);
     res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json");
     res.send(await upstream.text());
   } catch {
