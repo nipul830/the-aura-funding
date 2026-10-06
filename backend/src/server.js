@@ -281,19 +281,20 @@ app.post("/api/v1/admin/payments/:id/review", requireAuth(pool,["admin"]), async
     const decision=String(req.body?.status||"").toLowerCase();
     if(!["approved","rejected"].includes(decision)) return res.status(400).json({ok:false,error:"Invalid decision"});
     await client.query("BEGIN");
-    const q=await client.query(`SELECT po.*,p.name,p.account_size,p.id AS plan_id,r.id AS rule_version_id
+    const q=await client.query(`SELECT po.*,p.name,p.account_size,p.id AS plan_id
       FROM payment_orders po JOIN challenge_plans p ON p.id=po.plan_id
-      LEFT JOIN LATERAL(SELECT id FROM rule_versions WHERE plan_id=p.id ORDER BY version DESC LIMIT 1) r ON true
       WHERE po.id=$1 FOR UPDATE`,[req.params.id]);
     const po=q.rows[0];
     if(!po){await client.query("ROLLBACK");return res.status(404).json({ok:false,error:"Payment not found"});}
     if(po.status!=="pending"){await client.query("ROLLBACK");return res.status(409).json({ok:false,error:"Payment already reviewed"});}
+    const rule=await client.query("SELECT id FROM rule_versions WHERE plan_id=$1 ORDER BY version DESC LIMIT 1",[po.plan_id]);
+    if(!rule.rows[0]){await client.query("ROLLBACK");return res.status(400).json({ok:false,error:"No rule version configured for this plan"});}
     if(decision==="rejected"){
       await client.query("UPDATE payment_orders SET status='rejected',reviewed_at=now(),admin_note=$2 WHERE id=$1",[po.id,String(req.body?.note||"")]);
       await client.query("COMMIT");return res.json({ok:true,status:"rejected"});
     }
     const acct=await client.query(`INSERT INTO trading_accounts(user_id,plan_id,rule_version_id,initial_balance,balance,equity,status)
-      VALUES($1,$2,$3,$4,$4,$4,'active') RETURNING id,initial_balance,balance,equity,status`,[po.user_id,po.plan_id,po.rule_version_id,po.account_size]);
+      VALUES($1,$2,$3,$4,$4,$4,'active') RETURNING id,initial_balance,balance,equity,status`,[po.user_id,po.plan_id,rule.rows[0].id,po.account_size]);
     await client.query("UPDATE payment_orders SET status='approved',reviewed_at=now(),trading_account_id=$2,admin_note=$3 WHERE id=$1",[po.id,acct.rows[0].id,String(req.body?.note||"")]);
     await client.query("COMMIT");
     res.json({ok:true,status:"approved",account:acct.rows[0]});
