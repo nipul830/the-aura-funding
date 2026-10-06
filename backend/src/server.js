@@ -4,6 +4,7 @@ import helmet from "helmet";
 import cors from "cors";
 import { Pool } from "pg";
 import { evaluateRisk } from "./risk/risk-engine.js";
+import { riskRulesRouter } from "./admin/risk-rules-api.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -33,6 +34,8 @@ app.post("/api/v1/risk/evaluate", (req, res) => {
     res.status(400).json({ ok: false, error: error.message });
   }
 });
+
+app.use("/api/v1/admin/risk", riskRulesRouter(pool));
 
 const server = app.listen(port, () => {
   console.log(`The Aura Funding API listening on :${port}`);
