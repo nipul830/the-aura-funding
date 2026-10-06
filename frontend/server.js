@@ -28,7 +28,6 @@ app.all("/api/*splat", async (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, "public")));
-
 app.get("/login", (_req, res) => res.sendFile(path.join(__dirname, "public", "login.html")));
 
 async function requirePageAuth(req, res, next) {
@@ -45,13 +44,15 @@ async function requirePageAuth(req, res, next) {
   }
 }
 
-app.get("/admin", requirePageAuth, (req, res) => {
-  if (req.user.role !== "admin") return res.redirect("/user");
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
-});
+function adminPage(file) {
+  return async (req, res) => {
+    if (req.user.role !== "admin") return res.redirect("/user");
+    res.sendFile(path.join(__dirname, "public", file));
+  };
+}
 
-app.get("/user", requirePageAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "user.html"));
-});
+app.get("/admin", requirePageAuth, adminPage("admin.html"));
+app.get("/admin/accounts", requirePageAuth, adminPage("accounts.html"));
+app.get("/user", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "user.html")));
 
 app.listen(port, () => console.log(`The Aura Funding UI listening on :${port}`));
