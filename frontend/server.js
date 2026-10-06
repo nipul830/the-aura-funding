@@ -36,7 +36,7 @@ async function requirePageAuth(req, res, next) {
   try {
     const cookie = req.headers.cookie || "";
     const upstream = await fetch(`${API}/api/v1/auth/me`, { headers: { Cookie: cookie } });
-    if (!upstream.ok) return res.redirect("/login");
+    if (!upstream.ok) return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
     const data = await upstream.json();
     req.user = data.user;
     next();
