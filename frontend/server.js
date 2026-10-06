@@ -55,5 +55,11 @@ function adminPage(file) {
 app.get("/admin", requirePageAuth, adminPage("admin.html"));
 app.get("/admin/accounts", requirePageAuth, adminPage("accounts.html"));
 app.get("/user", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "user.html")));
+app.get("/user/trading", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "trading.html")));
+app.get("/user/plans", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "plans.html")));
+app.get("/user/checkout", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "checkout.html")));
+app.get("/user/position", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "position.html")));
+app.get("/user/terminal", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "terminal.html")));
+app.get("/user/settings", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "settings.html")));
 
 app.listen(port, () => console.log(`The Aura Funding UI listening on :${port}`));
