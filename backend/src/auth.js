@@ -54,6 +54,30 @@ export async function ensureAdmin(pool) {
   console.log(`Admin account bootstrapped: ${email}`);
 }
 
+export async function register(pool, fullName, email, password) {
+  const name = String(fullName || "").trim();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const secret = String(password || "");
+  if (name.length < 2) throw new Error("Please enter your full name");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error("Please enter a valid email");
+  if (secret.length < 8) throw new Error("Password must be at least 8 characters");
+
+  const existing = await pool.query("SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1", [normalizedEmail]);
+  if (existing.rows[0]) throw new Error("An account with this email already exists");
+
+  const result = await pool.query(
+    "INSERT INTO users (email, password_hash, role, status, full_name) VALUES ($1, $2, 'user', 'active', $3) RETURNING id, email, role, status, full_name",
+    [normalizedEmail, hashPassword(secret), name]
+  );
+  const user = result.rows[0];
+  const token = randomBytes(32).toString("hex");
+  await pool.query(
+    "INSERT INTO auth_sessions (user_id, token_hash, expires_at) VALUES ($1, $2, now() + ($3 || ' days')::interval)",
+    [user.id, tokenHash(token), SESSION_DAYS]
+  );
+  return { token, user: { id: user.id, email: user.email, role: user.role, fullName: user.full_name } };
+}
+
 export async function login(pool, email, password) {
   const result = await pool.query(
     "SELECT id, email, password_hash, role, status FROM users WHERE lower(email) = lower($1) LIMIT 1",
