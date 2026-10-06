@@ -81,6 +81,28 @@ app.patch("/api/v1/auth/profile", requireAuth(pool), async (req, res) => {
   }
 });
 
+app.get("/api/v1/plans", async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.name, p.account_size, p.price, p.currency, p.active,
+              r.version AS rule_version, r.rules
+       FROM challenge_plans p
+       LEFT JOIN LATERAL (
+         SELECT version, rules
+         FROM rule_versions
+         WHERE plan_id = p.id
+         ORDER BY version DESC
+         LIMIT 1
+       ) r ON true
+       WHERE p.active = true
+       ORDER BY p.account_size ASC`
+    );
+    res.json({ ok: true, plans: result.rows });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 app.get("/api/v1/auth/me", async (req, res) => {
   try {
     const user = await getSessionUser(pool, readSessionCookie(req));
