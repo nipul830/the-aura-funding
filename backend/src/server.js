@@ -208,6 +208,108 @@ app.post("/api/v1/risk/evaluate", requireAuth(pool, ["admin"]), (req, res) => {
 
 app.use("/api/v1/admin/risk", requireAuth(pool, ["admin"]), riskRulesRouter(pool));
 
+
+app.get("/api/v1/payment/settings", requireAuth(pool), async (_req,res)=>{
+  try{
+    const q=await pool.query("SELECT upi_id,upi_qr_url,usdt_addresses,support_email FROM payment_settings WHERE id=1");
+    res.json({ok:true,settings:q.rows[0]||{upi_id:"",upi_qr_url:"",usdt_addresses:{},support_email:"joker007llp@gmail.com"}});
+  }catch(error){res.status(500).json({ok:false,error:error.message});}
+});
+
+app.get("/api/v1/admin/payment-settings", requireAuth(pool,["admin"]), async (_req,res)=>{
+  try{
+    const q=await pool.query("SELECT upi_id,upi_qr_url,usdt_addresses,support_email FROM payment_settings WHERE id=1");
+    res.json({ok:true,settings:q.rows[0]});
+  }catch(error){res.status(500).json({ok:false,error:error.message});}
+});
+
+app.patch("/api/v1/admin/payment-settings", requireAuth(pool,["admin"]), async (req,res)=>{
+  try{
+    const networks=["TRC20","ERC20","BEP20","POLYGON","SOLANA","ARBITRUM","OPTIMISM","AVALANCHE","BASE","TON"];
+    const input=req.body?.usdt_addresses||{};
+    const addresses={};
+    for(const n of networks) addresses[n]=String(input[n]||"").trim();
+    const upiId=String(req.body?.upi_id||"").trim();
+    const qr=String(req.body?.upi_qr_url||"").trim();
+    const email=String(req.body?.support_email||"joker007llp@gmail.com").trim()||"joker007llp@gmail.com";
+    await pool.query("INSERT INTO payment_settings(id,upi_id,upi_qr_url,usdt_addresses,support_email) VALUES(1,$1,$2,$3::jsonb,$4) ON CONFLICT(id) DO UPDATE SET upi_id=$1,upi_qr_url=$2,usdt_addresses=$3::jsonb,support_email=$4,updated_at=now()",[upiId,qr,JSON.stringify(addresses),email]);
+    res.json({ok:true});
+  }catch(error){res.status(400).json({ok:false,error:error.message});}
+});
+
+app.post("/api/v1/payments", requireAuth(pool), async (req,res)=>{
+  const client=await pool.connect();
+  try{
+    const {plan_id,method,network,transaction_id}=req.body||{};
+    const m=String(method||"").toUpperCase();
+    const n=String(network||"").toUpperCase();
+    const tx=String(transaction_id||"").trim();
+    if(!plan_id||!["UPI","USDT"].includes(m)||!tx) return res.status(400).json({ok:false,error:"Plan, payment method and transaction ID are required"});
+    if(m==="USDT" && !n) return res.status(400).json({ok:false,error:"USDT network is required"});
+    const p=await client.query("SELECT id,name,account_size,price,currency,active FROM challenge_plans WHERE id=$1",[plan_id]);
+    if(!p.rows[0]||!p.rows[0].active) return res.status(404).json({ok:false,error:"Plan not available"});
+    const existing=await client.query("SELECT id FROM payment_orders WHERE user_id=$1 AND status='pending' AND expires_at>now()",[req.user.id]);
+    if(existing.rows[0]) return res.status(409).json({ok:false,error:"You already have a payment waiting for approval"});
+    const created=await client.query("INSERT INTO payment_orders(user_id,plan_id,amount,currency,method,network,transaction_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,expires_at,status",[req.user.id,p.rows[0].id,p.rows[0].price,p.rows[0].currency,m,m==="USDT"?n:null,tx]);
+    res.status(201).json({ok:true,payment:created.rows[0]});
+  }catch(error){res.status(400).json({ok:false,error:error.message});}finally{client.release();}
+});
+
+app.get("/api/v1/payments/mine", requireAuth(pool), async (req,res)=>{
+  try{
+    await pool.query("UPDATE payment_orders SET status='expired' WHERE user_id=$1 AND status='pending' AND expires_at<=now()",[req.user.id]);
+    const q=await pool.query(`SELECT po.id,po.amount,po.currency,po.method,po.network,po.transaction_id,po.status,po.expires_at,po.created_at,p.name AS plan_name,p.account_size
+      FROM payment_orders po JOIN challenge_plans p ON p.id=po.plan_id WHERE po.user_id=$1 ORDER BY po.created_at DESC LIMIT 10`,[req.user.id]);
+    res.json({ok:true,payments:q.rows});
+  }catch(error){res.status(500).json({ok:false,error:error.message});}
+});
+
+app.get("/api/v1/admin/payments", requireAuth(pool,["admin"]), async (_req,res)=>{
+  try{
+    await pool.query("UPDATE payment_orders SET status='expired' WHERE status='pending' AND expires_at<=now()");
+    const q=await pool.query(`SELECT po.id,po.amount,po.currency,po.method,po.network,po.transaction_id,po.status,po.expires_at,po.created_at,
+      u.email,u.full_name,p.name AS plan_name,p.account_size
+      FROM payment_orders po JOIN users u ON u.id=po.user_id JOIN challenge_plans p ON p.id=po.plan_id
+      ORDER BY CASE WHEN po.status='pending' THEN 0 ELSE 1 END,po.created_at DESC LIMIT 100`);
+    res.json({ok:true,payments:q.rows});
+  }catch(error){res.status(500).json({ok:false,error:error.message});}
+});
+
+app.post("/api/v1/admin/payments/:id/review", requireAuth(pool,["admin"]), async (req,res)=>{
+  const client=await pool.connect();
+  try{
+    const decision=String(req.body?.status||"").toLowerCase();
+    if(!["approved","rejected"].includes(decision)) return res.status(400).json({ok:false,error:"Invalid decision"});
+    await client.query("BEGIN");
+    const q=await client.query(`SELECT po.*,p.name,p.account_size,p.id AS plan_id,r.id AS rule_version_id
+      FROM payment_orders po JOIN challenge_plans p ON p.id=po.plan_id
+      LEFT JOIN LATERAL(SELECT id FROM rule_versions WHERE plan_id=p.id ORDER BY version DESC LIMIT 1) r ON true
+      WHERE po.id=$1 FOR UPDATE`,[req.params.id]);
+    const po=q.rows[0];
+    if(!po){await client.query("ROLLBACK");return res.status(404).json({ok:false,error:"Payment not found"});}
+    if(po.status!=="pending"){await client.query("ROLLBACK");return res.status(409).json({ok:false,error:"Payment already reviewed"});}
+    if(decision==="rejected"){
+      await client.query("UPDATE payment_orders SET status='rejected',reviewed_at=now(),admin_note=$2 WHERE id=$1",[po.id,String(req.body?.note||"")]);
+      await client.query("COMMIT");return res.json({ok:true,status:"rejected"});
+    }
+    const acct=await client.query(`INSERT INTO trading_accounts(user_id,plan_id,rule_version_id,initial_balance,balance,equity,status)
+      VALUES($1,$2,$3,$4,$4,$4,'active') RETURNING id,initial_balance,balance,equity,status`,[po.user_id,po.plan_id,po.rule_version_id,po.account_size]);
+    await client.query("UPDATE payment_orders SET status='approved',reviewed_at=now(),trading_account_id=$2,admin_note=$3 WHERE id=$1",[po.id,acct.rows[0].id,String(req.body?.note||"")]);
+    await client.query("COMMIT");
+    res.json({ok:true,status:"approved",account:acct.rows[0]});
+  }catch(error){await client.query("ROLLBACK");res.status(400).json({ok:false,error:error.message});}finally{client.release();}
+});
+
+app.get("/api/v1/accounts/mine", requireAuth(pool), async (req,res)=>{
+  try{
+    const q=await pool.query(`SELECT ta.id,ta.initial_balance,ta.balance,ta.equity,ta.status,p.name AS plan_name,p.account_size,p.price,p.currency,
+      rv.rules,rv.version AS rule_version
+      FROM trading_accounts ta JOIN challenge_plans p ON p.id=ta.plan_id JOIN LATERAL(SELECT rules,version FROM rule_versions WHERE plan_id=p.id ORDER BY version DESC LIMIT 1) rv ON true
+      WHERE ta.user_id=$1 ORDER BY ta.created_at DESC`,[req.user.id]);
+    res.json({ok:true,accounts:q.rows});
+  }catch(error){res.status(500).json({ok:false,error:error.message});}
+});
+
 const server = app.listen(port, async () => {
   try {
     await ensureAdmin(pool);
