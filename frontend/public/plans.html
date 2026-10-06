@@ -4,30 +4,12 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Plans · THE AURA FUNDING</title><link rel="stylesheet" href="/style.css">
 <style>
-.plan-page{max-width:1180px}
-.plan-intro{margin-bottom:20px}
-.plan-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 24px;padding:6px;border:1px solid var(--line);border-radius:14px;background:#0b0f16}
-.plan-tab{border:0;border-radius:10px;padding:13px 10px;background:transparent;color:var(--muted);font-weight:800;font-size:14px;cursor:pointer}
-.plan-tab.active{background:#f5b72c;color:#090b0f}
-.variant-tabs{display:flex;gap:10px;margin:0 0 20px}
-.variant-tab{border:1px solid var(--line);border-radius:999px;padding:9px 18px;background:#0b0f16;color:var(--muted);font-weight:700;cursor:pointer}
-.variant-tab.active{border-color:#f5b72c;color:#f5b72c}
-.variant-tab.hidden{display:none}
-.plan-intro h2{margin:0 0 8px;font-size:28px}
-.plan-intro p{margin:0}
-.plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.plan-card{position:relative;display:flex;flex-direction:column;min-height:440px;padding:24px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,#111722,#0b0f16)}
-.plan-card.featured{border-color:#f5b72c;box-shadow:0 0 0 1px rgba(245,183,44,.15)}
-.plan-badge{position:absolute;right:18px;top:18px;padding:6px 10px;border-radius:999px;background:#f5b72c;color:#090b0f;font-size:11px;font-weight:800}
-.plan-name{font-size:13px;letter-spacing:.14em;color:var(--muted);font-weight:800}
-.plan-size{font-size:42px;font-weight:850;margin:18px 0 4px}
-.plan-price{font-size:24px;font-weight:800;color:var(--accent);min-height:34px}
-.plan-price small{font-size:13px;color:var(--muted);font-weight:500}
-.plan-rule-list{list-style:none;padding:0;margin:26px 0;display:grid;gap:12px;flex:1}
-.plan-rule-list li{display:flex;justify-content:space-between;gap:16px;padding-bottom:10px;border-bottom:1px solid var(--line);font-size:14px}
-.plan-rule-list b{color:var(--text)}
-.plan-loading,.plan-empty{padding:28px;border:1px dashed var(--line);border-radius:16px;color:var(--muted)}
-@media(max-width:900px){.plan-grid{grid-template-columns:1fr}.plan-card{min-height:390px}}
+.plan-page{max-width:1180px}.top{margin-bottom:26px}.plan-intro{margin:0 0 18px}.plan-intro h2{display:none}.plan-intro p{margin:0;color:var(--muted);font-size:15px}
+.plan-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px;padding:5px;border:1px solid #202b39;border-radius:16px;background:#091018}.plan-tab{border:0;border-radius:12px;padding:14px 8px;background:transparent;color:#9ca7b8;font-weight:800;font-size:14px;cursor:pointer}.plan-tab.active{background:#f5b72c;color:#090b0f;box-shadow:0 0 18px rgba(245,183,44,.12)}
+.variant-tabs{display:flex;justify-content:center;gap:8px;margin:0 auto 18px}.variant-tab{min-width:110px;border:1px solid #202b39;border-radius:14px;padding:11px 18px;background:#091018;color:#9ca7b8;font-weight:800;cursor:pointer}.variant-tab.active{border-color:#f5b72c;color:#f5b72c;background:#0d1219;box-shadow:0 0 16px rgba(245,183,44,.10)}.variant-tab.hidden{display:none}
+.plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:stretch}.plan-group{grid-column:1/-1;border:1px solid #202b39;border-radius:16px;padding:13px 14px;background:linear-gradient(180deg,#101822,#0b1118);display:flex;align-items:center;gap:12px;margin-top:2px}.plan-group-icon{width:38px;height:38px;border:1px solid #263342;border-radius:11px;display:grid;place-items:center;color:#f5b72c;font-size:19px;background:#0b141d}.plan-group-copy{min-width:0;flex:1}.plan-group-title{font-size:18px;font-weight:850}.plan-group-title span{color:#f5b72c}.plan-group-sub{color:var(--muted);font-size:12px;margin-top:2px}.plan-version{padding:7px 9px;border-radius:10px;background:#17202b;color:#dce2ea;font-size:11px;font-weight:800}.plan-rules-btn{border:1px solid #2a3746;border-radius:10px;background:#111a25;color:#dce2ea;padding:9px 11px;font-weight:700;font-size:12px}
+.plan-card{position:relative;display:flex;flex-direction:column;min-height:0;padding:14px;border:1px solid #24303e;border-radius:16px;background:linear-gradient(180deg,#0e1721,#091018);box-shadow:0 8px 22px rgba(0,0,0,.16)}.plan-card.featured{border-color:#806216;box-shadow:0 0 0 1px rgba(245,183,44,.12),0 8px 24px rgba(0,0,0,.18)}.plan-badge{position:absolute;right:9px;top:9px;padding:5px 7px;border-radius:999px;background:#f5b72c;color:#090b0f;font-size:9px;font-weight:900}.plan-size{font-size:25px;font-weight:900;letter-spacing:-.5px;margin:1px 0 1px}.plan-label{font-size:11px;color:#8f9bad;margin-bottom:8px}.plan-price{font-size:23px;font-weight:900;color:#f5b72c;margin:3px 0 2px}.plan-price small{display:block;font-size:10px;color:#8f9bad;font-weight:500;margin-top:1px}.plan-rule-list{list-style:none;padding:9px 0 4px;margin:6px 0 8px;border-top:1px solid #202b39;display:grid;gap:7px;flex:1}.plan-rule-list li{display:flex;justify-content:space-between;gap:5px;font-size:11px;color:#aeb7c5}.plan-rule-list b{color:#f1f4f8;font-size:11px}.choose-plan{width:100%;min-height:40px;border-radius:11px;font-size:12px;font-weight:850}.plan-loading,.plan-empty{grid-column:1/-1;padding:28px;border:1px dashed #253141;border-radius:16px;color:var(--muted);text-align:center}
+@media(max-width:700px){.main{padding-left:14px;padding-right:14px}.top{margin-bottom:20px}.title h1{font-size:28px}.title .muted{font-size:13px}.plan-tabs{gap:4px;padding:4px}.plan-tab{padding:13px 4px;font-size:13px}.variant-tabs{margin-bottom:14px}.variant-tab{min-width:104px;padding:10px 14px}.plan-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.plan-group{padding:11px 10px}.plan-group-icon{width:34px;height:34px;font-size:16px}.plan-group-title{font-size:16px}.plan-group-sub{font-size:10px}.plan-rules-btn{display:none}.plan-version{font-size:10px;padding:6px 7px}.plan-card{padding:11px 9px;border-radius:14px}.plan-size{font-size:20px}.plan-label{font-size:9px}.plan-price{font-size:21px}.plan-price small{font-size:9px}.plan-rule-list{gap:6px;padding-top:8px}.plan-rule-list li{font-size:9px}.plan-rule-list b{font-size:10px}.choose-plan{min-height:38px;padding:8px 3px;font-size:10px}}
 </style>
 </head>
 <body>
@@ -54,31 +36,25 @@ let allPlans=[], selectedType="2 STEP", selectedVariant="LITE";
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function ruleValue(r,key,field="limit"){return r?.[key]?.[field] ?? null}
 function makeCard(p,i){
- const r=p.rules||{};
- const size=Number(p.account_size||0);
- const price=Number(p.price||0);
- const currency=p.currency||"USD";
- const target=ruleValue(r,"profitTarget","target");
- const daily=ruleValue(r,"dailyDrawdown");
- const max=ruleValue(r,"maxDrawdown");
- const floating=ruleValue(r,"floatingLoss");
- return `<article class="plan-card ${i===1?"featured":""}">
-   ${i===1?'<div class="plan-badge">POPULAR</div>':""}
-   <div class="plan-name">${esc(p.name||"CHALLENGE")}</div>
-   <div class="plan-size">$${size.toLocaleString("en-US",{maximumFractionDigits:0})}</div>
-   <div class="plan-price">${price>0?esc(currency)+" "+price.toLocaleString("en-US",{maximumFractionDigits:2}):"Pricing set by admin"} ${price>0?'<small>challenge fee</small>':""}</div>
+ const r=p.rules||{}, size=Number(p.account_size||0), price=Number(p.price||0), currency=p.currency||"USD";
+ const target=ruleValue(r,"profitTarget","target"), daily=ruleValue(r,"dailyDrawdown"), max=ruleValue(r,"maxDrawdown");
+ return \`<article class="plan-card \${i===1?"featured":""}">
+   \${i===1?'<div class="plan-badge">POPULAR</div>':""}
+   <div class="plan-size">$\${size.toLocaleString("en-US",{maximumFractionDigits:0})}</div>
+   <div class="plan-label">Account Size</div>
+   <div class="plan-price">\${price>0?esc(currency)+" "+price.toLocaleString("en-US",{maximumFractionDigits:2}):"—"}<small>Challenge Fee</small></div>
    <ul class="plan-rule-list">
-     <li><span>Daily Drawdown</span><b>${daily!=null?daily+"%":"—"}</b></li>
-     <li><span>Maximum Drawdown</span><b>${max!=null?max+"%":"—"}</b></li>
-     <li><span>Profit Target</span><b>${target!=null?target+"%":"—"}</b></li>
-     <li><span>Rule Version</span><b>${p.rule_version?("v"+p.rule_version):"Default"}</b></li>
+     <li><span>Daily DD</span><b>\${daily!=null?daily+"%":"—"}</b></li>
+     <li><span>Max DD</span><b>\${max!=null?max+"%":"—"}</b></li>
+     <li><span>Profit Target</span><b>\${target!=null?target+"%":"—"}</b></li>
+     <li><span>Min Days</span><b>\${r.minTradingDays?.enabled===false?"—":(r.minTradingDays?.limit??"—")}</b></li>
    </ul>
-   <button class="btn primary choose-plan" data-id="${esc(p.id)}">Choose Plan</button>
- </article>`
+   <button class="btn primary choose-plan" data-id="\${esc(p.id)}">Choose Plan →</button>
+ </article>\`
 }
 function renderPlans(){
  const filtered=allPlans.filter(p=>String(p.name||"").toUpperCase()===selectedType+" "+selectedVariant);
- plansEl.innerHTML=filtered.length?filtered.map(makeCard).join(""):'<div class="plan-empty">No plan available for this option.</div>';
+ plansEl.innerHTML=filtered.length ? '<div class="plan-group"><div class="plan-group-icon">'+(selectedType==="2 STEP"?"↗":selectedType==="1 STEP"?"ϟ":"🚀")+'</div><div class="plan-group-copy"><div class="plan-group-title">'+selectedType+' <span>'+selectedVariant+'</span></div><div class="plan-group-sub">'+(selectedVariant==="LITE"?"Standard rules with balanced targets.":"Lower drawdown, better conditions.")+'</div></div><div class="plan-version">v'+(filtered[0].rule_version||1)+'</div><button class="plan-rules-btn" type="button">View Rules →</button></div>'+filtered.map(makeCard).join("") : '<div class="plan-empty">No plan available for this option.</div>';
  document.querySelectorAll(".choose-plan").forEach(btn=>btn.addEventListener("click",()=>{
    location.href="/user/checkout?plan="+encodeURIComponent(btn.dataset.id);
  }));
