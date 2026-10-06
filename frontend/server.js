@@ -29,8 +29,19 @@ app.all("/api/*splat", async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, "public")));
-app.get("/login", (_req, res) => res.sendFile(path.join(__dirname, "public", "login.html")));
+app.use(express.static(path.join(__dirname, "public"), {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-store, max-age=0");
+  }
+}));
+app.get("/", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+app.get("/login", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
 app.get("/signup", (_req, res) => res.sendFile(path.join(__dirname, "public", "signup.html")));
 
 async function requirePageAuth(req, res, next) {
