@@ -100,3 +100,5 @@
 .password-wrap{position:relative}.password-wrap input{padding-right:48px!important;width:100%;box-sizing:border-box}.eye-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#8b95a7;cursor:pointer;font-size:16px;padding:7px;line-height:1}.eye-btn:hover{color:#fff}
 
 .eye-btn{font-family:Arial,sans-serif;font-size:17px;color:#8b95a7}.eye-btn:active{transform:translateY(-50%) scale(.95)}
+
+.login-success{min-height:20px;color:var(--green);font-size:13px}
