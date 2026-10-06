@@ -80,7 +80,7 @@ export async function register(pool, fullName, email, password) {
 
 export async function login(pool, email, password) {
   const result = await pool.query(
-    "SELECT id, email, password_hash, role, status FROM users WHERE lower(email) = lower($1) LIMIT 1",
+    "SELECT id, email, full_name, password_hash, role, status FROM users WHERE lower(email) = lower($1) LIMIT 1",
     [String(email || "").trim()]
   );
   const user = result.rows[0];
@@ -94,20 +94,20 @@ export async function login(pool, email, password) {
     "INSERT INTO auth_sessions (user_id, token_hash, expires_at) VALUES ($1, $2, now() + ($3 || ' days')::interval)",
     [user.id, tokenHashValue, SESSION_DAYS]
   );
-  return { token, user: { id: user.id, email: user.email, role: user.role } };
+  return { token, user: { id: user.id, email: user.email, role: user.role, fullName: user.full_name } };
 }
 
 export async function getSessionUser(pool, token) {
   if (!token) return null;
   const result = await pool.query(
-    `SELECT u.id, u.email, u.role, u.status
+    `SELECT u.id, u.email, u.full_name, u.role, u.status
      FROM auth_sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = $1 AND s.expires_at > now() AND u.status = 'active'
      LIMIT 1`,
     [tokenHash(token)]
   );
-  return result.rows[0] || null;
+  return result.rows[0] ? { ...result.rows[0], fullName: result.rows[0].full_name } : null;
 }
 
 export async function logout(pool, token) {
