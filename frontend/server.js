@@ -59,6 +59,21 @@ app.get("/", async (req, res) => {
   }
 });
 
+// Private page routes must be registered before static files so /admin/* can never fall through to public/live HTML.
+app.get("/admin", requirePageAuth, adminPage("admin.html"));
+app.get("/admin/accounts", requirePageAuth, adminPage("accounts.html"));
+app.get("/admin/plans", requirePageAuth, adminPage("admin-plans.html"));
+app.get("/admin/payments", requirePageAuth, adminPage("admin-payments.html"));
+app.get("/admin/content", requirePageAuth, adminPage("admin-content.html"));
+app.get("/user", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "user.html")));
+app.get("/user/trading", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "trading.html")));
+app.get("/user/plans", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "plans.html")));
+app.get("/user/checkout", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "checkout.html")));
+app.get("/user/position", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "position.html")));
+app.get("/user/terminal", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "terminal.html")));
+app.get("/user/settings", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "settings.html")));
+app.get("/user/profile", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "profile.html")));
+
 app.use(express.static(path.join(__dirname, "public"), {
   setHeaders(res, filePath) {
     if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-store, max-age=0");
