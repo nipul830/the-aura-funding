@@ -1240,6 +1240,9 @@ function startTerminalPolling(){
   if(marketTimer)clearInterval(marketTimer);
   if(accountTimer)clearInterval(accountTimer);
   if(terminalSessionToken)connectMarketWebSocket();
+  marketTimer=setInterval(function(){
+    if(terminalSessionToken) refreshMarket(false);
+  },1000);
   accountTimer=setInterval(function(){
     if(terminalSessionToken){
       lastTerminalAccountRefresh=Date.now();
