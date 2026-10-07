@@ -19,7 +19,7 @@ body{background:var(--bg);color:#f5f6f8}.terminal-shell{min-height:100vh;display
 <script>
 const chartEl=document.getElementById('chart');
 const chart=LightweightCharts.createChart(chartEl,{layout:{background:{color:'#101216'},textColor:'#c7cbd3'},grid:{vertLines:{color:'#171a20'},horzLines:{color:'#171a20'}},rightPriceScale:{borderColor:'#292d35'},timeScale:{borderColor:'#292d35',timeVisible:true,secondsVisible:false}});
-const candles=chart.addSeries(LightweightCharts.CandlestickSeries,{upColor:'#20a66b',downColor:'#d95359,borderUpColor:'#20a66b',borderDownColor:'#d95359',wickUpColor:'#20a66b',wickDownColor:'#d95359'});
+const candles=chart.addSeries(LightweightCharts.CandlestickSeries,{upColor:'#20a66b',downColor:'#d95359',borderUpColor:'#20a66b',borderDownColor:'#d95359',wickUpColor:'#20a66b',wickDownColor:'#d95359'});
 let selected=null,accounts=[],timer=null;
 const binanceSymbol={XAUUSDT:'PAXGUSDT',BTCUSDT:'BTCUSDT',ETHUSDT:'ETHUSDT',SOLUSDT:'SOLUSDT'};
 const supported=s=>!!binanceSymbol[s];
