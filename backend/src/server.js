@@ -33,104 +33,72 @@ app.get("/api/v1", (_req, res) => {
 });
 
 const MARKET_CANDLE_MAX = 50000;
-const BINANCE_SYMBOLS = new Set(["BTCUSDT","ETHUSDT","SOLUSDT"]);
-const OANDA_SYMBOLS = new Set(["XAU_USD","EUR_USD","USD_JPY","GBP_USD"]);
-const OANDA_GRANULARITY = {"1m":"M1","5m":"M5","15m":"M15","1h":"H1","4h":"H4","1d":"D"};
+const BIQUOTE_SYMBOLS = new Set(["XAUUSD","EURUSD","USDJPY","GBPUSD","BTCUSD","ETHUSD","SOLUSD","BTCUSDT","ETHUSDT","SOLUSDT"]);
+const BIQUOTE_INTERVALS = new Set(["1m","5m","15m","30m","1h","4h","1d"]);
 
-async function fetchBinanceCandles(symbol, interval, latestOnly=false) {
-  if (latestOnly) {
-    const url = new URL("https://api.binance.com/api/v3/klines");
-    url.searchParams.set("symbol", symbol);
-    url.searchParams.set("interval", interval);
-    url.searchParams.set("limit", "1");
-    const upstream = await fetch(url);
-    if (!upstream.ok) throw new Error("Binance returned " + upstream.status);
-    const rows = await upstream.json();
-    return rows.map(row => ({time:Math.floor(Number(row[0])/1000),open:Number(row[1]),high:Number(row[2]),low:Number(row[3]),close:Number(row[4])}));
-  }
-  let all=[], endTime;
-  while(all.length<MARKET_CANDLE_MAX){
-    const batchLimit=Math.min(1000,MARKET_CANDLE_MAX-all.length);
-    const url=new URL("https://api.binance.com/api/v3/klines");
-    url.searchParams.set("symbol",symbol); url.searchParams.set("interval",interval); url.searchParams.set("limit",String(batchLimit));
-    if(endTime) url.searchParams.set("endTime",String(endTime));
-    const upstream=await fetch(url);
-    if(!upstream.ok) throw new Error("Binance returned "+upstream.status);
-    const rows=await upstream.json();
-    if(!Array.isArray(rows)||!rows.length) break;
-    all=rows.concat(all); endTime=Number(rows[0][0])-1;
-    if(rows.length<batchLimit) break;
-  }
-  const seen=new Set();
-  return all.filter(row=>{const t=Number(row[0]);if(seen.has(t))return false;seen.add(t);return true;}).slice(-MARKET_CANDLE_MAX).map(row=>({time:Math.floor(Number(row[0])/1000),open:Number(row[1]),high:Number(row[2]),low:Number(row[3]),close:Number(row[4])}));
-}
-
-async function fetchOandaCandles(instrument, interval, latestOnly=false) {
-  const token=String(process.env.OANDA_API_TOKEN||"").trim();
-  let accountId=String(process.env.OANDA_ACCOUNT_ID||"").trim();
-  const baseUrl=String(process.env.OANDA_API_URL||"https://api-fxpractice.oanda.com").replace(/\/$/,"");
-  const granularity=OANDA_GRANULARITY[interval];
-  if(!token) throw new Error("OANDA market data is not configured");
-  if(!granularity) throw new Error("Unsupported OANDA interval");
-  const authHeaders={Authorization:"Bearer "+token,Accept:"application/json"};
-  if(!accountId){
-    const accountsUrl=new URL(baseUrl+"/v3/accounts");
-    const accountsResponse=await fetch(accountsUrl,{headers:authHeaders});
-    if(!accountsResponse.ok) throw new Error("OANDA account discovery failed");
-    const accountsBody=await accountsResponse.json();
-    accountId=String(accountsBody?.accounts?.[0]?.id||"").trim();
-    if(!accountId) throw new Error("OANDA account ID not found");
-  }
+async function fetchBiquoteCandles(symbol, interval, latestOnly=false) {
+  const base="https://biquote.io/api/"+encodeURIComponent(symbol)+"/ohlc";
   const request=async params=>{
-    const url=new URL(baseUrl+"/v3/accounts/"+encodeURIComponent(accountId)+"/instruments/"+encodeURIComponent(instrument)+"/candles");
+    const url=new URL(base);
     Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,String(v)));
-    const upstream=await fetch(url,{headers:authHeaders});
-    if(!upstream.ok) throw new Error("OANDA returned "+upstream.status);
+    const upstream=await fetch(url);
+    if(!upstream.ok) {
+      let detail="";
+      try { const body=await upstream.json(); detail=body?.message||body?.error||""; } catch {}
+      throw new Error("Biquote returned "+upstream.status+(detail?": "+detail:""));
+    }
     return upstream.json();
   };
-  if(latestOnly){
-    const data=await request({price:"M",granularity,count:2});
-    return (data.candles||[]).slice(-1).map(c=>{const p=c.mid;return {time:Math.floor(Date.parse(c.time)/1000),open:Number(p.o),high:Number(p.h),low:Number(p.l),close:Number(p.c)};});
+  if(latestOnly) {
+    const data=await request({interval,limit:2});
+    return (Array.isArray(data?.bars)?data.bars:[]).slice(0,1).map(c=>({
+      time:Math.floor(Date.parse(c.openTime)/1000),
+      open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)
+    }));
   }
-  let all=[],to;
-  while(all.length<MARKET_CANDLE_MAX){
-    const data=await request({price:"M",granularity,count:5000,...(to?{to,includeFirst:false}:{})});
-    const rows=Array.isArray(data.candles)?data.candles:[];
-    if(!rows.length) break;
-    all=rows.concat(all);
-    const earliest=rows[0]?.time;
-    if(!earliest||rows.length<5000) break;
-    to=earliest;
-  }
+  let all=[], to;
   const seen=new Set();
-  return all.filter(c=>{const t=Math.floor(Date.parse(c.time)/1000);if(!Number.isFinite(t)||seen.has(t))return false;seen.add(t);return true;}).slice(-MARKET_CANDLE_MAX).map(c=>{const p=c.mid;return {time:Math.floor(Date.parse(c.time)/1000),open:Number(p.o),high:Number(p.h),low:Number(p.l),close:Number(p.c)};});
+  while(all.length<MARKET_CANDLE_MAX) {
+    const params={interval,limit:1000};
+    if(to) params.to=to;
+    const data=await request(params);
+    const rows=Array.isArray(data?.bars)?data.bars:[];
+    if(!rows.length) break;
+    let added=0;
+    for(const c of rows) {
+      const t=Math.floor(Date.parse(c.openTime)/1000);
+      if(!Number.isFinite(t)||seen.has(t)) continue;
+      seen.add(t);
+      all.push({time:t,open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)});
+      added++;
+    }
+    if(!added) break;
+    const oldest=rows.reduce((min,c)=>{
+      const t=Date.parse(c.openTime);
+      return Number.isFinite(t)&&(!min||t<min)?t:min;
+    },0);
+    if(!oldest||rows.length<1000) break;
+    to=new Date(oldest-1).toISOString();
+  }
+  all.sort((a,b)=>a.time-b.time);
+  return all.slice(-MARKET_CANDLE_MAX);
 }
 
 app.get("/api/v1/market/klines", requireAuth(pool), async (req,res)=>{
-  try{
+  try {
     const source=String(req.query?.source||"").toLowerCase();
     const symbol=String(req.query?.symbol||"").toUpperCase();
     const interval=String(req.query?.interval||"5m");
     const latestOnly=String(req.query?.latest||"")==="1";
-    const allowedIntervals=new Set(["1m","5m","15m","1h","4h","1d"]);
-    if(!allowedIntervals.has(interval)) return res.status(400).json({ok:false,error:"Unsupported interval"});
-    let candles;
-    if(source==="oanda"){
-      if(!OANDA_SYMBOLS.has(symbol)) return res.status(400).json({ok:false,error:"Unsupported OANDA instrument"});
-      candles=await fetchOandaCandles(symbol,interval,latestOnly);
-    }else if(source==="binance"){
-      if(!BINANCE_SYMBOLS.has(symbol)) return res.status(400).json({ok:false,error:"Unsupported Binance symbol"});
-      candles=await fetchBinanceCandles(symbol,interval,latestOnly);
-    }else return res.status(400).json({ok:false,error:"Unsupported market source"});
-    res.json({ok:true,source,symbol,interval,maxCandles:MARKET_CANDLE_MAX,candles});
-  }catch(error){
-    const message=String(error?.message||"");
-    console.error("Market data error:",message);
-    if(message.includes("OANDA market data is not configured")) return res.status(503).json({ok:false,error:"OANDA market data is not configured on the server"});
-    if(source==="oanda"){
-      return res.status(502).json({ok:false,error:"OANDA market data request failed",detail:message});
-    }
-    res.status(502).json({ok:false,error:"Unable to load market data"});
+    if(source!=="biquote") return res.status(400).json({ok:false,error:"Unsupported market source"});
+    if(!BIQUOTE_SYMBOLS.has(symbol)) return res.status(400).json({ok:false,error:"Unsupported Biquote symbol"});
+    if(!BIQUOTE_INTERVALS.has(interval)) return res.status(400).json({ok:false,error:"Unsupported interval"});
+    const candles=await fetchBiquoteCandles(symbol,interval,latestOnly);
+    res.json({ok:true,source:"biquote",symbol,interval,maxCandles:MARKET_CANDLE_MAX,candles});
+  } catch(error) {
+    const detail=String(error?.message||"");
+    console.error("Market data error:",detail);
+    res.status(502).json({ok:false,error:"Unable to load Biquote market data",detail});
   }
 });
 
