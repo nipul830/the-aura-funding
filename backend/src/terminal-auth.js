@@ -117,6 +117,23 @@ export async function terminalLogin(pool, loginId, password) {
   return { token, userId: row.user_id, loginId: row.login_id };
 }
 
+export async function createTerminalSession(pool, userId) {
+  const user = await pool.query(
+    "SELECT u.id,u.status,tc.status AS terminal_status FROM users u JOIN terminal_credentials tc ON tc.user_id=u.id WHERE u.id=$1 LIMIT 1",
+    [userId]
+  );
+  const row = user.rows[0];
+  if (!row || row.status !== "active" || row.terminal_status !== "active") {
+    throw new Error("Terminal account unavailable");
+  }
+  const token = crypto.randomBytes(32).toString("base64url");
+  await pool.query(
+    "INSERT INTO terminal_sessions(user_id,token_hash,expires_at) VALUES($1,$2,now()+interval '7 days')",
+    [userId, hashToken(token)]
+  );
+  return { token, userId: row.id };
+}
+
 export async function getOrCreateTerminalCredentials(pool, userId) {
   const existing = await pool.query(
     "SELECT login_id,password_encrypted,investor_password_encrypted,status FROM terminal_credentials WHERE user_id=$1 LIMIT 1",
