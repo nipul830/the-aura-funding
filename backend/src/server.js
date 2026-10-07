@@ -33,53 +33,90 @@ app.get("/api/v1", (_req, res) => {
 });
 
 const MARKET_CANDLE_MAX = 50000;
-const MARKET_SYMBOLS = new Set(["PAXGUSDT","BTCUSDT","ETHUSDT","SOLUSDT"]);
+const BINANCE_SYMBOLS = new Set(["BTCUSDT","ETHUSDT","SOLUSDT"]);
+const OANDA_SYMBOLS = new Set(["XAU_USD","EUR_USD","USD_JPY","GBP_USD"]);
+const OANDA_GRANULARITY = {"1m":"M1","5m":"M5","15m":"M15","1h":"H1","4h":"H4","1d":"D"};
 
-app.get("/api/v1/market/klines", requireAuth(pool), async (req, res) => {
-  try {
-    const symbol = String(req.query?.symbol || "").toUpperCase();
-    const interval = String(req.query?.interval || "5m");
-    const allowedIntervals = new Set(["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d"]);
-    if (!MARKET_SYMBOLS.has(symbol)) return res.status(400).json({ ok:false, error:"Unsupported market symbol" });
-    if (!allowedIntervals.has(interval)) return res.status(400).json({ ok:false, error:"Unsupported interval" });
+async function fetchBinanceCandles(symbol, interval, latestOnly=false) {
+  if (latestOnly) {
+    const url = new URL("https://api.binance.com/api/v3/klines");
+    url.searchParams.set("symbol", symbol);
+    url.searchParams.set("interval", interval);
+    url.searchParams.set("limit", "1");
+    const upstream = await fetch(url);
+    if (!upstream.ok) throw new Error("Binance returned " + upstream.status);
+    const rows = await upstream.json();
+    return rows.map(row => ({time:Math.floor(Number(row[0])/1000),open:Number(row[1]),high:Number(row[2]),low:Number(row[3]),close:Number(row[4])}));
+  }
+  let all=[], endTime;
+  while(all.length<MARKET_CANDLE_MAX){
+    const batchLimit=Math.min(1000,MARKET_CANDLE_MAX-all.length);
+    const url=new URL("https://api.binance.com/api/v3/klines");
+    url.searchParams.set("symbol",symbol); url.searchParams.set("interval",interval); url.searchParams.set("limit",String(batchLimit));
+    if(endTime) url.searchParams.set("endTime",String(endTime));
+    const upstream=await fetch(url);
+    if(!upstream.ok) throw new Error("Binance returned "+upstream.status);
+    const rows=await upstream.json();
+    if(!Array.isArray(rows)||!rows.length) break;
+    all=rows.concat(all); endTime=Number(rows[0][0])-1;
+    if(rows.length<batchLimit) break;
+  }
+  const seen=new Set();
+  return all.filter(row=>{const t=Number(row[0]);if(seen.has(t))return false;seen.add(t);return true;}).slice(-MARKET_CANDLE_MAX).map(row=>({time:Math.floor(Number(row[0])/1000),open:Number(row[1]),high:Number(row[2]),low:Number(row[3]),close:Number(row[4])}));
+}
 
-    let all = [];
-    let endTime;
-    while (all.length < MARKET_CANDLE_MAX) {
-      const batchLimit = Math.min(1000, MARKET_CANDLE_MAX - all.length);
-      const url = new URL("https://api.binance.com/api/v3/klines");
-      url.searchParams.set("symbol", symbol);
-      url.searchParams.set("interval", interval);
-      url.searchParams.set("limit", String(batchLimit));
-      if (endTime) url.searchParams.set("endTime", String(endTime));
+async function fetchOandaCandles(instrument, interval, latestOnly=false) {
+  const token=String(process.env.OANDA_API_TOKEN||"").trim();
+  const accountId=String(process.env.OANDA_ACCOUNT_ID||"").trim();
+  const baseUrl=String(process.env.OANDA_API_URL||"https://api-fxpractice.oanda.com").replace(/\/$/,"");
+  const granularity=OANDA_GRANULARITY[interval];
+  if(!token||!accountId) throw new Error("OANDA market data is not configured");
+  if(!granularity) throw new Error("Unsupported OANDA interval");
+  const request=async params=>{
+    const url=new URL(baseUrl+"/v3/accounts/"+encodeURIComponent(accountId)+"/instruments/"+encodeURIComponent(instrument)+"/candles");
+    Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,String(v)));
+    const upstream=await fetch(url,{headers:{Authorization:"Bearer "+token,Accept:"application/json"}});
+    if(!upstream.ok) throw new Error("OANDA returned "+upstream.status);
+    return upstream.json();
+  };
+  if(latestOnly){
+    const data=await request({price:"M",granularity,count:2});
+    return (data.candles||[]).slice(-1).map(c=>{const p=c.mid;return {time:Math.floor(Date.parse(c.time)/1000),open:Number(p.o),high:Number(p.h),low:Number(p.l),close:Number(p.c)};});
+  }
+  let all=[],to;
+  while(all.length<MARKET_CANDLE_MAX){
+    const data=await request({price:"M",granularity,count:5000,...(to?{to,includeFirst:false}:{})});
+    const rows=Array.isArray(data.candles)?data.candles:[];
+    if(!rows.length) break;
+    all=rows.concat(all);
+    const earliest=rows[0]?.time;
+    if(!earliest||rows.length<5000) break;
+    to=earliest;
+  }
+  const seen=new Set();
+  return all.filter(c=>{const t=Math.floor(Date.parse(c.time)/1000);if(!Number.isFinite(t)||seen.has(t))return false;seen.add(t);return true;}).slice(-MARKET_CANDLE_MAX).map(c=>{const p=c.mid;return {time:Math.floor(Date.parse(c.time)/1000),open:Number(p.o),high:Number(p.h),low:Number(p.l),close:Number(p.c)};});
+}
 
-      const upstream = await fetch(url);
-      if (!upstream.ok) throw new Error("Market data provider returned " + upstream.status);
-      const rows = await upstream.json();
-      if (!Array.isArray(rows) || rows.length === 0) break;
-
-      all = rows.concat(all);
-      endTime = Number(rows[0][0]) - 1;
-      if (rows.length < batchLimit) break;
-    }
-
-    const seen = new Set();
-    const candles = all.filter(row => {
-      const t = Number(row[0]);
-      if (seen.has(t)) return false;
-      seen.add(t);
-      return true;
-    }).slice(-MARKET_CANDLE_MAX).map(row => ({
-      time: Math.floor(Number(row[0]) / 1000),
-      open: Number(row[1]),
-      high: Number(row[2]),
-      low: Number(row[3]),
-      close: Number(row[4])
-    }));
-
-    res.json({ ok:true, symbol, interval, maxCandles:MARKET_CANDLE_MAX, candles });
-  } catch (error) {
-    res.status(502).json({ ok:false, error:"Unable to load market data" });
+app.get("/api/v1/market/klines", requireAuth(pool), async (req,res)=>{
+  try{
+    const source=String(req.query?.source||"").toLowerCase();
+    const symbol=String(req.query?.symbol||"").toUpperCase();
+    const interval=String(req.query?.interval||"5m");
+    const latestOnly=String(req.query?.latest||"")==="1";
+    const allowedIntervals=new Set(["1m","5m","15m","1h","4h","1d"]);
+    if(!allowedIntervals.has(interval)) return res.status(400).json({ok:false,error:"Unsupported interval"});
+    let candles;
+    if(source==="oanda"){
+      if(!OANDA_SYMBOLS.has(symbol)) return res.status(400).json({ok:false,error:"Unsupported OANDA instrument"});
+      candles=await fetchOandaCandles(symbol,interval,latestOnly);
+    }else if(source==="binance"){
+      if(!BINANCE_SYMBOLS.has(symbol)) return res.status(400).json({ok:false,error:"Unsupported Binance symbol"});
+      candles=await fetchBinanceCandles(symbol,interval,latestOnly);
+    }else return res.status(400).json({ok:false,error:"Unsupported market source"});
+    res.json({ok:true,source,symbol,interval,maxCandles:MARKET_CANDLE_MAX,candles});
+  }catch(error){
+    if(String(error?.message||"").includes("OANDA market data is not configured")) return res.status(503).json({ok:false,error:"OANDA market data is not configured on the server"});
+    res.status(502).json({ok:false,error:"Unable to load market data"});
   }
 });
 
