@@ -99,7 +99,8 @@ function terminalTokenHash(token){return crypto.createHash("sha256").update(Stri
 async function requireTerminalSession(req,res,next){
   try{
     const auth=String(req.headers.authorization||"");
-    const token=auth.startsWith("Bearer ")?auth.slice(7).trim():"";
+    const fallbackToken=String(req.headers["x-terminal-token"]||"").trim();
+    const token=auth.startsWith("Bearer ")?auth.slice(7).trim():fallbackToken;
     if(!token)return res.status(401).json({ok:false,error:"Terminal login required"});
     const result=await pool.query(
       "SELECT u.id,u.status,tc.status AS terminal_status FROM terminal_sessions ts JOIN users u ON u.id=ts.user_id JOIN terminal_credentials tc ON tc.user_id=u.id WHERE ts.token_hash=$1 AND ts.expires_at>now() LIMIT 1",
