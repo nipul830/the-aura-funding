@@ -36,15 +36,15 @@ const amount=(p,b)=>Number(b)*Number(p||0)/100;
 function icon(type){const paths={chart:'M4 19V9m5 10V5m5 14v-7m5 7V3',up:'M4 17 10 11l4 4 6-8',cup:'M8 3h8v4a4 4 0 0 1-8 0V3Zm-3 1H3v3a5 5 0 0 0 5 5m11-8h2v3a5 5 0 0 1-5 5M12 11v7m-4 3h8',stack:'M4 7 12 3l8 4-8 4-8-4Zm0 5 8 4 8-4m-16 5 8 4 8-4',target:'M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z',down:'M12 3v18m-5-5 5 5 5-5',bolt:'M13 2 5 13h6l-1 9 9-13h-6l0-7',cal:'M5 4h14v16H5zM8 2v4m8-4v4M5 9h14'};return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="'+paths[type]+'"/></svg>'}
 function pct(v,limit){return Math.max(0,Math.min(100,Number(v||0)/Math.max(1,Number(limit||1))*100))}
 function render(a){
- const r=a.rules||{},init=Number(a.initial_balance),balance=Number(a.balance),equity=Number(a.equity),profit=balance-init;
+ let r=a.rules||{};try{if(typeof r==="string")r=JSON.parse(r)}catch{r={}}if(!r||typeof r!=="object")r={};const init=Number(a.initial_balance)||0,balance=Number(a.balance)||0,equity=Number(a.equity)||balance,profit=balance-init;
  const target=amount(r.profitTarget?.target,init),daily=amount(r.dailyDrawdown?.limit,init),max=amount(r.maxDrawdown?.limit,init),floating=amount(r.floatingLoss?.limit,init),days=Number(r.minTradingDays?.limit||0);
  const accountNo=(a.id||"").replace(/-/g,"").slice(0,7).toUpperCase();
- const phase=(a.plan_name||"").startsWith("2 STEP")?"Phase 1":"Single Phase";
+ const planName=String(a.plan_name||"Funded Account");const phase=planName.startsWith("2 STEP")?"Phase 1":"Single Phase";
  const dd=Math.max(0,init-equity);
  return `<article class="account-card">
-  <div class="account-head"><div class="account-left"><div class="account-id">#AUR-${esc(accountNo)} ⧉</div><h2 class="account-title">${esc(a.plan_name)}</h2><div class="account-size">$ ${init.toLocaleString()}</div><div class="account-label">Account Size</div></div><div style="display:flex;gap:12px;align-items:flex-start"><div class="status">${esc(a.status.toUpperCase())}</div><div class="phase">${phase}⌄</div></div></div>
+  <div class="account-head"><div class="account-left"><div class="account-id">#AUR-${esc(accountNo)} ⧉</div><h2 class="account-title">${esc(planName)}</h2><div class="account-size">$ ${init.toLocaleString()}</div><div class="account-label">Account Size</div></div><div style="display:flex;gap:12px;align-items:flex-start"><div class="status">${esc(String(a.status||"ACTIVE").toUpperCase())}</div><div class="phase">${phase}⌄</div></div></div>
   <div class="balance-battery"><div class="balance-fill" style="width:${Math.max(5,Math.min(100,(equity/init)*100))}%"><div class="balance-content"><span class="bolt">ϟ</span><div><b>${money(balance)}</b><span>Account Balance</span></div></div></div><div class="balance-percent">${Math.round(Math.max(0,Math.min(100,equity/init*100)))}%</div></div>
-  <div class="metrics"><div class="metric"><div class="metric-icon">${icon("chart")}</div><div class="metric-label">Equity</div><div class="metric-value">${money(equity)}</div></div><div class="metric"><div class="metric-icon">${icon("up")}</div><div class="metric-label">P&amp;L</div><div class="metric-value ${profit>=0?"green":""}">${money(profit)}</div></div><div class="metric"><div class="metric-icon">${icon("cup")}</div><div class="metric-label">Total Profit</div><div class="metric-value gold">${money(profit)}</div></div><div class="metric"><div class="metric-icon">${icon("stack")}</div><div class="metric-label">Account Type</div><div class="metric-value" style="font-size:15px">${esc(a.plan_name)}</div></div></div>
+  <div class="metrics"><div class="metric"><div class="metric-icon">${icon("chart")}</div><div class="metric-label">Equity</div><div class="metric-value">${money(equity)}</div></div><div class="metric"><div class="metric-icon">${icon("up")}</div><div class="metric-label">P&amp;L</div><div class="metric-value ${profit>=0?"green":""}">${money(profit)}</div></div><div class="metric"><div class="metric-icon">${icon("cup")}</div><div class="metric-label">Total Profit</div><div class="metric-value gold">${money(profit)}</div></div><div class="metric"><div class="metric-icon">${icon("stack")}</div><div class="metric-label">Account Type</div><div class="metric-value" style="font-size:15px">${esc(planName)}</div></div></div>
   <div class="rules">
    <div class="rule"><div class="rule-row"><div class="rule-icon">${icon("target")}</div><div class="rule-name">Profit Target <span class="rule-badge">${esc(r.profitTarget?.target||0)}%</span></div><div class="rule-limit">${money(target)}<span class="rule-percent">${Math.round(pct(profit,target))}%</span></div></div><div class="track"><div class="track-fill" style="width:${pct(profit,target)}%"></div></div><div class="rule-sub">${money(Math.max(0,profit))} / ${money(target)}</div></div>
    <div class="rule"><div class="rule-row"><div class="rule-icon">${icon("down")}</div><div class="rule-name">Daily Drawdown Limit <span class="rule-badge">${esc(r.dailyDrawdown?.limit||0)}%</span></div><div class="rule-limit">${money(daily)}<span class="rule-percent">${Math.round(pct(dd,daily))}%</span></div></div><div class="track"><div class="track-fill" style="width:${pct(dd,daily)}%"></div></div><div class="rule-sub">${money(dd)} / ${money(daily)}</div></div>
@@ -56,14 +56,14 @@ function render(a){
  </article>`;
 }
 let allAccounts=[],selectedId=localStorage.getItem("aura_selected_account");
-function renderSelected(){
+function renderSelected(){try{
  const selected=allAccounts.find(x=>x.id===selectedId)||allAccounts[0];if(!selected)return;
  selectedId=selected.id;localStorage.setItem("aura_selected_account",selected.id);
  const grid=document.getElementById("accountSwitcher");
  grid.innerHTML=allAccounts.map(x=>`<button type="button" class="hive-account ${x.id===selected.id?"selected":""}" data-id="${esc(x.id)}"><span class="hive-inner"><span class="hive-icon">A</span><span class="hive-id">#AUR-${esc((x.id||"").replace(/-/g,"").slice(0,7).toUpperCase())}</span><span class="hive-plan">${esc(x.plan_name||"Account")}</span><span class="hive-size">$ ${Number(x.account_size||x.initial_balance||0).toLocaleString()}</span><span class="hive-status">${esc(x.status||"active")}</span></span>${x.id===selected.id?'<span class="hive-selected">✓</span>':""}</button>`).join("");
  document.querySelectorAll(".hive-account").forEach(b=>b.onclick=()=>{selectedId=b.dataset.id;localStorage.setItem("aura_selected_account",selectedId);renderSelected()});
  document.getElementById("accounts").innerHTML=render(selected);
-}
+}catch(e){console.error("Dashboard render error",e);document.getElementById("accounts").innerHTML='<div class="empty">Unable to display your account. Please refresh.</div>'}}
 async function load(){
  try{
   const [ar,ur]=await Promise.all([fetch("/api/v1/accounts/mine",{cache:"no-store"}),fetch("/api/v1/auth/me",{cache:"no-store"})]);
@@ -72,7 +72,7 @@ async function load(){
   if(u.user){const n=u.user.fullName||u.user.full_name||u.user.email||"Account";document.getElementById("welcomeName").textContent=n;document.getElementById("topAvatar").textContent=n.charAt(0).toUpperCase()}
   if(allAccounts.length){document.getElementById("accountSwitcher").style.display="flex";renderSelected()}
   else document.getElementById("accounts").innerHTML='<div class="empty"><h2>No funded account yet</h2><div class="muted">Choose a challenge plan, complete checkout and wait for approval.</div><a class="btn primary" href="/user/plans" style="display:inline-block;margin-top:14px">Choose Plan</a></div>';
- }catch(e){document.getElementById("accounts").innerHTML='<div class="empty">Unable to load your account.</div>'}
+ }catch(e){console.error("Dashboard load error",e);document.getElementById("accounts").innerHTML='<div class="empty">Unable to load your account. Please refresh.</div>'}
 }
 load();
 </script></body></html>
