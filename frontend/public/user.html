@@ -78,14 +78,31 @@ function renderSelected(){try{
  document.getElementById("accounts").innerHTML=render(selected);
 }catch(e){console.error("Dashboard render error",e);document.getElementById("accounts").innerHTML='<div class="empty">Unable to display your account. Please refresh.</div>'}}
 async function load(){
+ const box=document.getElementById("accounts");
  try{
-  const [ar,ur]=await Promise.all([fetch("/api/v1/accounts/mine",{cache:"no-store"}),fetch("/api/v1/auth/me",{cache:"no-store"})]);
-  const a=await ar.json(),u=await ur.json();allAccounts=a.accounts||[];
-  document.getElementById("accountCount").textContent=allAccounts.length+" Account"+(allAccounts.length===1?"":"s");
-  if(u.user){const n=u.user.fullName||u.user.full_name||u.user.email||"Account";const wn=document.getElementById("welcomeName");const av=document.getElementById("topAvatar");if(wn)wn.textContent=n;if(av)av.textContent=n.charAt(0).toUpperCase()}
-  if(allAccounts.length){document.getElementById("accountSwitcher").style.display="flex";renderSelected()}
-  else document.getElementById("accounts").innerHTML='<div class="empty"><h2>No funded account yet</h2><div class="muted">Choose a challenge plan, complete checkout and wait for approval.</div><a class="btn primary" href="/user/plans" style="display:inline-block;margin-top:14px">Choose Plan</a></div>';
- }catch(e){console.error("Dashboard load error",e);document.getElementById("accounts").innerHTML='<div class="empty">Unable to load your account. Please refresh.</div>'}
+  const ur=await fetch("/api/v1/auth/me",{cache:"no-store",credentials:"same-origin"});
+  const u=await ur.json().catch(()=>({}));
+  if(!ur.ok||!u.user) throw new Error(u.error||"Authentication required");
+  const n=u.user.fullName||u.user.full_name||u.user.email||"Account";
+  const wn=document.getElementById("welcomeName"),av=document.getElementById("topAvatar");
+  if(wn)wn.textContent=n;if(av)av.textContent=n.charAt(0).toUpperCase();
+
+  const ar=await fetch("/api/v1/accounts/mine",{cache:"no-store",credentials:"same-origin"});
+  const a=await ar.json().catch(()=>({}));
+  if(!ar.ok) throw new Error(a.error||"Unable to load accounts");
+  allAccounts=Array.isArray(a.accounts)?a.accounts:[];
+  const count=document.getElementById("accountCount");
+  if(count)count.textContent=allAccounts.length+" Account"+(allAccounts.length===1?"":"s");
+  const switcher=document.getElementById("accountSwitcher");
+  if(allAccounts.length){switcher.style.display="block";renderSelected()}
+  else {
+    switcher.style.display="none";
+    box.innerHTML='<div class="empty"><h2>No funded account yet</h2><div class="muted">Choose a challenge plan, complete checkout and wait for approval.</div><a class="btn primary" href="/user/plans" style="display:inline-block;margin-top:14px">Choose Plan</a></div>';
+  }
+ }catch(e){
+  console.error("Dashboard load error",e);
+  box.innerHTML='<div class="empty">Unable to load your account. Please refresh.</div>';
+ }
 }
 load();
 </script></body></html>
