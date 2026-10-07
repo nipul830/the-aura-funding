@@ -113,7 +113,6 @@ async function requireUserPageAuth(req, res, next) {
     const upstream = await fetch(`${API}/api/v1/auth/me`, { headers: { Cookie: cookie } });
     if (!upstream.ok) return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
     const data = await upstream.json();
-    if (data.user?.role === "admin") return res.redirect("/admin");
     req.user = data.user;
     next();
   } catch {
