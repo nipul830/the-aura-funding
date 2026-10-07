@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs/promises";
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -40,9 +41,25 @@ app.use(express.static(path.join(__dirname, "public"), {
     if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-store, max-age=0");
   }
 }));
-app.get("/", (_req, res) => {
+app.get("/", async (req, res) => {
   res.setHeader("Cache-Control", "no-store, max-age=0");
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  try {
+    const cookie = req.headers.cookie || "";
+    let user = null;
+    if (cookie) {
+      const upstream = await fetch(`${API}/api/v1/auth/me`, { headers: { Cookie: cookie } });
+      if (upstream.ok) {
+        const data = await upstream.json();
+        user = data.user || null;
+      }
+    }
+    let html = await fs.readFile(path.join(__dirname, "public", "index.html"), "utf8");
+    const safeUser = JSON.stringify(user).replace(/</g, "\\u003c");
+    html = html.replace("<script>", `<script>window.__AURA_USER__=${safeUser};</script><script>`);
+    res.type("html").send(html);
+  } catch {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  }
 });
 app.get("/login", (_req, res) => {
   res.setHeader("Cache-Control", "no-store, max-age=0");
