@@ -119,3 +119,31 @@
 .story-photo{width:82px;height:82px;flex:0 0 82px;border-radius:14px;object-fit:cover;border:1px solid #303947;background:#121923}
 .story-avatar{display:grid;place-items:center;font-size:30px;font-weight:800;color:#090b0f;background:linear-gradient(145deg,#ffc33b,#c8880d)}
 .story-body{min-width:0}.story-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.story-top b{font-size:17px}.story-top span{font-size:9px;letter-spacing:1px;color:var(--green);border:1px solid rgba(39,209,127,.3);padding:4px 7px;border-radius:20px}.story-account{color:var(--muted);font-size:12px;margin-top:4px}.story-profit{color:var(--green);font-size:25px;font-weight:850;margin-top:9px}.story-body p{color:#aab3c2;line-height:1.6;margin:7px 0 0}.faq-list{display:grid;gap:10px;max-width:900px;margin-top:22px}.faq-item{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:0 16px}.faq-item summary{cursor:pointer;list-style:none;padding:17px 2px;font-weight:700}.faq-item summary::-webkit-details-marker{display:none}.faq-item summary:after{content:"+";float:right;color:var(--accent);font-size:20px}.faq-item[open] summary:after{content:"−"}.faq-item p{color:var(--muted);line-height:1.65;padding:0 2px 17px;margin:0}.contact-section{display:grid;grid-template-columns:1fr auto;align-items:center;gap:30px}.contact-actions{display:flex;gap:9px;flex-wrap:wrap}.content-loading,.content-empty{padding:20px;border:1px dashed var(--line);border-radius:13px;color:var(--muted)}.content-form{display:grid;gap:12px;margin:15px 0}.content-form textarea{resize:vertical}.content-inline{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.content-inline .field{min-width:110px}.content-check{display:flex;align-items:center;gap:8px;flex-direction:row-reverse;justify-content:flex-end}.content-check input{width:18px;height:18px}.content-list{display:grid;gap:10px;margin-top:16px}.content-item{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:12px;background:#0b1018}.content-item p{color:var(--muted);line-height:1.5;margin:6px 0}.content-item small{color:var(--green);font-size:10px;letter-spacing:1px}.content-actions{display:flex;gap:7px;flex-shrink:0}.story-preview{display:flex;gap:12px;align-items:center}.story-preview img,.story-placeholder{width:52px;height:52px;border-radius:10px;object-fit:cover;background:#171d27;display:grid;place-items:center;font-weight:800;color:var(--accent)}.story-preview p{margin:4px 0}.story-preview strong{color:var(--green)}@media(max-width:700px){.story-grid{grid-template-columns:1fr}.contact-section{grid-template-columns:1fr}.content-item{flex-direction:column}.content-actions{width:100%}.content-actions .btn{flex:1}}
+
+/* Public trader stories marquee */
+.story-marquee{overflow:hidden;margin-top:22px;width:100%;position:relative}
+.story-track{display:flex;width:max-content;animation:auraStoriesMove 32s linear infinite;will-change:transform}
+.story-marquee:hover .story-track{animation-play-state:paused}
+.story-slide{width:min(760px,88vw);margin-right:14px;flex:0 0 auto}
+.story-card{width:100%;min-height:190px;display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:center;padding:16px;background:linear-gradient(145deg,#0e141d,#090d13);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.story-avatar{width:150px;height:150px;display:block;object-fit:cover;object-position:center;border-radius:13px;border:1px solid #303947;background:#121923}
+.story-body{min-width:0;overflow:hidden}
+.story-meta{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.story-meta b{font-size:18px}
+.story-meta span{font-size:10px;color:var(--muted);text-align:right}
+.story-profit{color:var(--green);font-size:26px;font-weight:850;margin-top:10px}
+.story-body p{color:#aab3c2;line-height:1.5;margin:8px 0 0;overflow:hidden}
+.story-stars{color:var(--accent);letter-spacing:2px;margin-top:8px}
+@keyframes auraStoriesMove{0%{transform:translateX(-50%)}100%{transform:translateX(0)}}
+@media(max-width:700px){
+  .story-marquee{margin-top:18px}
+  .story-track{animation-duration:28s}
+  .story-slide{width:calc(100vw - 36px);margin-right:10px}
+  .story-card{grid-template-columns:96px minmax(0,1fr);gap:12px;padding:12px;min-height:132px}
+  .story-avatar{width:96px;height:108px;border-radius:11px}
+  .story-meta b{font-size:16px}
+  .story-meta span{font-size:9px;max-width:100px}
+  .story-profit{font-size:22px;margin-top:7px}
+  .story-body p{font-size:12px;line-height:1.4;max-height:52px}
+  .story-stars{font-size:12px;margin-top:5px}
+}
