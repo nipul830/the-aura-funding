@@ -10,7 +10,7 @@ import { evaluateRisk } from "./risk/risk-engine.js";
 import { normalizeRules } from "./risk/rule-schema.js";
 import { riskRulesRouter } from "./admin/risk-rules-api.js";
 import { ensureAdmin, register, login, logout, getSessionUser, getProfile, updateProfile, readSessionCookie, setSessionCookie, clearSessionCookie, requireAuth } from "./auth.js";
-import { ensureTerminalCredentialsTable, getOrCreateTerminalCredentials } from "./terminal-auth.js";
+import { ensureTerminalCredentialsTable, getOrCreateTerminalCredentials, terminalLogin } from "./terminal-auth.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -358,6 +358,25 @@ app.patch("/api/v1/admin/plans/:id", requireAuth(pool, ["admin"]), async (req, r
     await client.query("ROLLBACK");
     res.status(400).json({ok:false,error:error.message});
   } finally { client.release(); }
+});
+
+app.post("/api/v1/terminal/login", async (req, res) => {
+  try {
+    const loginId = String(req.body?.loginId || "").trim();
+    const password = String(req.body?.password || "");
+    if (!loginId || !password) return res.status(400).json({ ok:false, error:"Login ID and password are required" });
+    const session = await terminalLogin(pool, loginId, password);
+    const accountResult = await pool.query(
+      `SELECT id, plan_name, account_size, initial_balance, balance, equity, status, phase
+       FROM accounts WHERE user_id=$1 ORDER BY created_at DESC`,
+      [session.userId]
+    );
+    const active = accountResult.rows.find(a => String(a.status||"").toLowerCase() !== "breached") || accountResult.rows[0] || null;
+    if (!active) return res.status(403).json({ ok:false, error:"No funded account available" });
+    res.json({ ok:true, token:session.token, account:active, loginId:session.loginId });
+  } catch (error) {
+    res.status(401).json({ ok:false, error:error.message || "Terminal login failed" });
+  }
 });
 
 app.get("/api/v1/terminal/credentials", requireAuth(pool), async (req, res) => {
