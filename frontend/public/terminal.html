@@ -135,22 +135,13 @@ body{background:#fff}
    <div class="symbol-picker">
      <button class="symbol-btn" id="symbolBtn" type="button">GOLD ▾</button>
      <div class="symbol-list" id="symbolList">
-       <button type="button" data-symbol="OANDA:XAUUSD" data-name="GOLD"><strong>GOLD</strong><span>XAUUSD</span></button>
-       <button type="button" data-symbol="FX:EURUSD" data-name="EUR/USD"><strong>EUR/USD</strong><span>EURUSD</span></button>
-       <button type="button" data-symbol="FX:GBPUSD" data-name="GBP/USD"><strong>GBP/USD</strong><span>GBPUSD</span></button>
-       <button type="button" data-symbol="FX:USDJPY" data-name="USD/JPY"><strong>USD/JPY</strong><span>USDJPY</span></button>
-       <button type="button" data-symbol="FX:AUDUSD" data-name="AUD/USD"><strong>AUD/USD</strong><span>AUDUSD</span></button>
-       <button type="button" data-symbol="BINANCE:BTCUSDT" data-name="BTC/USD"><strong>BTC/USD</strong><span>BTCUSDT</span></button>
-       <button type="button" data-symbol="BINANCE:ETHUSDT" data-name="ETH/USD"><strong>ETH/USD</strong><span>ETHUSDT</span></button>
-       <button type="button" data-symbol="BINANCE:SOLUSDT" data-name="SOL/USD"><strong>SOL/USD</strong><span>SOLUSDT</span></button>
-       <button type="button" data-symbol="BINANCE:XRPUSDT" data-name="XRP/USD"><strong>XRP/USD</strong><span>XRPUSDT</span></button>
-       <button type="button" data-symbol="INDEX:NAS100" data-name="NAS100"><strong>NAS100</strong><span>US Tech 100</span></button>
-       <button type="button" data-symbol="INDEX:DEX40" data-name="DEX40"><strong>DEX40</strong><span>Germany 40</span></button>
-       <button type="button" data-symbol="INDEX:US30" data-name="US30"><strong>US30</strong><span>Dow 30</span></button>
-       <button type="button" data-symbol="OIL:USOIL" data-name="US OIL"><strong>US OIL</strong><span>WTI</span></button>
-       <button type="button" data-symbol="NASDAQ:AAPL" data-name="APPLE"><strong>APPLE</strong><span>AAPL</span></button>
-       <button type="button" data-symbol="NASDAQ:NVDA" data-name="NVIDIA"><strong>NVIDIA</strong><span>NVDA</span></button>
-     </div>
+       <button type="button" data-symbol="XAUUSD" data-name="GOLD"><strong>GOLD</strong><span>XAUUSD</span></button>
+       <button type="button" data-symbol="EURUSD" data-name="EUR/USD"><strong>EUR/USD</strong><span>EURUSD</span></button>
+       <button type="button" data-symbol="GBPUSD" data-name="GBP/USD"><strong>GBP/USD</strong><span>GBPUSD</span></button>
+       <button type="button" data-symbol="USDJPY" data-name="USD/JPY"><strong>USD/JPY</strong><span>USDJPY</span></button>
+       <button type="button" data-symbol="BTCUSDT" data-name="BTC/USD"><strong>BTC/USD</strong><span>BTCUSDT</span></button>
+       <button type="button" data-symbol="ETHUSDT" data-name="ETH/USD"><strong>ETH/USD</strong><span>ETHUSDT</span></button>
+       <button type="button" data-symbol="SOLUSDT" data-name="SOL/USD"><strong>SOL/USD</strong><span>SOLUSDT</span></button>
    </div>
    <div class="spread">0.00</div>
  </div>
@@ -1224,7 +1215,7 @@ document.getElementById('terminalLogout')?.addEventListener('click',()=>{
   if(symbolBtn&&symbolList){
     symbolBtn.addEventListener('click',e=>{e.stopPropagation();symbolList.classList.toggle('open')});
     symbolList.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{
-      currentSymbol=btn.dataset.symbol;
+      currentSymbol=normalizeAuraSymbol(btn.dataset.symbol);
       localStorage.setItem(AURA_SYMBOL_STORAGE,currentSymbol);
       symbolBtn.textContent=btn.dataset.name+' ▾';symbolList.classList.remove('open');
       mountChart('tvMobile',currentSymbol);
