@@ -94,7 +94,7 @@ async function load(){
   if(tr.ok&&tc.credentials){
     const cr=tc.credentials;
     if(terminalStatus) terminalStatus.textContent=String(cr.status||"ACTIVE").toUpperCase();
-    if(terminalBody) terminalBody.innerHTML=\`<div class="terminal-credential-grid"><div class="terminal-field"><span>Login ID</span><b>\${esc(cr.loginId)}</b></div><div class="terminal-field"><span>Password</span><b>\${esc(cr.password)}</b></div><div class="terminal-field"><span>Investor Password</span><b>\${esc(cr.investorPassword)}</b></div></div><div class="terminal-note">Use these credentials to enter the trading terminal.</div>\`;
+    if(terminalBody) terminalBody.innerHTML='<div class="terminal-credential-grid"><div class="terminal-field"><span>Login ID</span><b>'+esc(cr.loginId)+'</b></div><div class="terminal-field"><span>Password</span><b>'+esc(cr.password)+'</b></div><div class="terminal-field"><span>Investor Password</span><b>'+esc(cr.investorPassword)+'</b></div></div><div class="terminal-note">Use these credentials to enter the trading terminal.</div>';
   }else if(terminalBody){ terminalBody.textContent="Terminal credentials unavailable. Please refresh."; }
 
   const ar=await fetch("/api/v1/accounts/mine",{cache:"no-store",credentials:"same-origin"});
