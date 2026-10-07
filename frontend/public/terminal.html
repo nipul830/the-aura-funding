@@ -26,7 +26,7 @@ body{background:#fff;color:#182332}
 body{background:#fff}
  .nav{display:none}
  .terminal-page{display:none}
- .mobile-terminal{display:none;flex-direction:column;height:100dvh;min-height:100vh;padding:10px 0 84px;background:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden;position:relative}
+ .mobile-terminal{display:flex;flex-direction:column;height:100dvh;min-height:100vh;padding:10px 0 84px;background:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden;position:relative}
  .m-top{display:flex;align-items:center;justify-content:space-between;padding:0 28px 10px}
  .account-label{font-size:11px;color:#7b8793;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
  .account-values{display:flex;align-items:center;gap:12px}
@@ -83,21 +83,7 @@ body{background:#fff}
 <link rel="preconnect" href="https://aurafirming.in" crossorigin><link rel="preconnect" href="https://s3.tradingview.com" crossorigin><link rel="preconnect" href="https://www.gstatic.com" crossorigin></head>
 <body>
 
-<section class="terminal-login-screen" id="terminalLoginScreen">
-  <div class="terminal-login-card">
-    <h1>Aura Farming Terminal</h1>
-    <p>Login with the credentials issued for your funded account.</p>
-    <label class="terminal-field"><span>Terminal Login ID</span><input id="terminalLoginId" autocomplete="username" placeholder="AFXXXXXXXXXX"></label>
-    <label class="terminal-field"><span>Password</span><input id="terminalLoginPassword" type="password" autocomplete="current-password" placeholder="Terminal password"></label>
-    <div class="terminal-mode">
-      <button id="terminalTraderMode" class="active" type="button">Trading Password</button>
-      <button id="terminalInvestorMode" type="button">Investor Password</button>
-    </div>
-    <button class="terminal-login-btn" id="terminalLoginBtn" type="button">Login to Terminal</button>
-    <div class="terminal-login-status" id="terminalLoginStatus"></div>
-    <p class="terminal-security-note">Investor mode is read-only. If the account is breached, both terminal passwords are revoked.</p>
-  </div>
-</section>
+
 
 <header class="nav" style="display:none">
   <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false" type="button"><span></span><span></span><span></span></button>
@@ -204,9 +190,11 @@ function setTerminalLoginStatus(message,good){
   if(el){el.textContent=message||'';el.style.color=good?'#00a875':'#e6004d'}
 }
 function showTerminalLogin(message){
-  document.querySelector('.mobile-terminal').style.display='none';
-  document.getElementById('terminalLoginScreen').style.display='flex';
-  setTerminalLoginStatus(message||'',false);
+  terminalSessionToken='';
+  sessionStorage.removeItem('auraTerminalSession');
+  sessionStorage.removeItem('auraTerminalRole');
+  if(message) console.warn('Terminal authentication:',message);
+  if(location.pathname!=='/login.html') location.href='/login.html';
 }
 function showTerminal(role){
   terminalRole=role||'trader';
@@ -1170,12 +1158,6 @@ const canvas=document.createElement('div');canvas.className='aura-chart-canvas';
   }
 }
 
-document.getElementById('terminalTraderMode')?.addEventListener('click',function(){
-  terminalRole='trader';this.classList.add('active');document.getElementById('terminalInvestorMode')?.classList.remove('active');
-});
-document.getElementById('terminalInvestorMode')?.addEventListener('click',function(){
-  terminalRole='investor';this.classList.add('active');document.getElementById('terminalTraderMode')?.classList.remove('active');
-});
 document.querySelectorAll('.top-quotes .quote').forEach(btn=>{
   btn.addEventListener('pointerup',e=>{
     e.preventDefault();
@@ -1184,8 +1166,6 @@ document.querySelectorAll('.top-quotes .quote').forEach(btn=>{
     placeSimulatedOrder(btn.classList.contains('buy')?'BUY':'SELL');
   },{passive:false});
 });
-document.getElementById('terminalLoginBtn')?.addEventListener('click',loginTerminal);
-document.getElementById('terminalLoginPassword')?.addEventListener('keydown',e=>{if(e.key==='Enter')loginTerminal()});
 document.getElementById('terminalLogout')?.addEventListener('click',()=>{
   terminalSessionToken='';
   if(marketWs){try{marketWs.close()}catch{}marketWs=null;}
@@ -1224,11 +1204,32 @@ document.getElementById('terminalLogout')?.addEventListener('click',()=>{
   }
 })();
 
+async function openAuthenticatedTerminal(){
+  try{
+    const r=await fetch('/api/v1/terminal/session',{
+      method:'POST',
+      credentials:'include',
+      headers:{'Content-Type':'application/json'}
+    });
+    let d={};try{d=await r.json()}catch(e){}
+    if(!r.ok)throw new Error(d.error||d.detail||'Authentication required');
+    terminalSessionToken=d.token||'';
+    if(!terminalSessionToken)throw new Error('Terminal session was not issued');
+    sessionStorage.setItem('auraTerminalSession',terminalSessionToken);
+    sessionStorage.setItem('auraTerminalRole','trader');
+    if(d.account){
+      sessionStorage.setItem('auraTerminalAccount',JSON.stringify(d.account));
+      renderTerminalAccount(d.account);
+    }
+    showTerminal('trader');
+  }catch(e){
+    showTerminalLogin(e.message||'Authentication required');
+  }
+}
 if(terminalSessionToken){
-  const role=sessionStorage.getItem('auraTerminalRole')||'trader';
-  showTerminal(role);
+  showTerminal(sessionStorage.getItem('auraTerminalRole')||'trader');
 }else{
-  showTerminalLogin('');
+  openAuthenticatedTerminal();
 }
 
 // Keep terminal data live without hammering Firestore.
