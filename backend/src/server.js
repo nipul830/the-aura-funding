@@ -10,7 +10,7 @@ import { evaluateRisk } from "./risk/risk-engine.js";
 import { normalizeRules } from "./risk/rule-schema.js";
 import { riskRulesRouter } from "./admin/risk-rules-api.js";
 import { ensureAdmin, register, login, logout, getSessionUser, getProfile, updateProfile, readSessionCookie, setSessionCookie, clearSessionCookie, requireAuth } from "./auth.js";
-import { ensureTerminalCredentialsTable, getOrCreateTerminalCredentials, terminalLogin } from "./terminal-auth.js";
+import { ensureTerminalCredentialsTable, getOrCreateTerminalCredentials, terminalLogin, createTerminalSession } from "./terminal-auth.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -474,6 +474,31 @@ app.post("/api/v1/terminal/login", async (req, res) => {
     res.json({ ok:true, token:session.token, account:active, loginId:session.loginId });
   } catch (error) {
     res.status(401).json({ ok:false, error:error.message || "Terminal login failed" });
+  }
+});
+
+app.post("/api/v1/terminal/session", requireAuth(pool), async (req, res) => {
+  try {
+    const session = await createTerminalSession(pool, req.user.id);
+    const accountResult = await pool.query(
+      `SELECT ta.id, ta.initial_balance, ta.balance, ta.equity, ta.status,
+              p.name AS plan_name, p.account_size, p.price, p.currency,
+              rv.rules, rv.version AS rule_version
+       FROM trading_accounts ta
+       JOIN challenge_plans p ON p.id=ta.plan_id
+       JOIN LATERAL (
+         SELECT rules,version FROM rule_versions
+         WHERE plan_id=p.id ORDER BY version DESC LIMIT 1
+       ) rv ON true
+       WHERE ta.user_id=$1
+       ORDER BY ta.created_at DESC`,
+      [req.user.id]
+    );
+    const active = accountResult.rows.find(a => String(a.status||"").toLowerCase() !== "breached") || accountResult.rows[0] || null;
+    if (!active) return res.status(403).json({ ok:false, error:"No funded account available" });
+    res.json({ ok:true, token:session.token, account:active });
+  } catch (error) {
+    res.status(401).json({ ok:false, error:error.message || "Terminal session failed" });
   }
 });
 
