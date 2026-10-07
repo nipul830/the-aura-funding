@@ -61,8 +61,7 @@ function renderSelected(){try{
  selectedId=selected.id;localStorage.setItem("aura_selected_account",selected.id);
  const grid=document.getElementById("accountSwitcher");
  const ordered=[selected,...allAccounts.filter(x=>x.id!==selected.id)];
-const rows=[];for(let i=0;i<ordered.length;i+=3)rows.push(ordered.slice(i,i+3));
-if(rows.length>1&&rows[1].length===3)rows[1]=rows[1].slice(0,2);
+const rows=[];rows.push(ordered.slice(0,3));for(let i=3;i<ordered.length;i+=2)rows.push(ordered.slice(i,i+2));
 grid.innerHTML=rows.map(row=>'<div class="hive-row">'+row.map(x=>`<button type="button" class="hive-account ${x.id===selected.id?"selected":""}" data-id="${esc(x.id)}"><span class="hive-inner"><span class="hive-icon">A</span><span class="hive-id">#AUR-${esc((x.id||"").replace(/-/g,"").slice(0,7).toUpperCase())}</span><span class="hive-plan">${esc(x.plan_name||"Account")}</span><span class="hive-size">$ ${Number(x.account_size||x.initial_balance||0).toLocaleString()}</span><span class="hive-status">${esc(x.status||"active")}</span></span>${x.id===selected.id?'<span class="hive-selected">✓</span>':""}</button>`).join("")+'</div>').join("");
  document.querySelectorAll(".hive-account").forEach(b=>b.onclick=()=>{selectedId=b.dataset.id;localStorage.setItem("aura_selected_account",selectedId);renderSelected()});
  document.getElementById("accounts").innerHTML=render(selected);
