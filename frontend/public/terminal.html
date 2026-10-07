@@ -1014,7 +1014,7 @@ async function loadChartCandles(symbol,interval){
   if(chartDataRequest)return chartDataRequest;
   chartDataRequest=(async()=>{
     try{
-      const data=await terminalApi('/api/market/candles?symbol='+encodeURIComponent(symbol)+'&interval='+encodeURIComponent(interval));
+      const data=await terminalApi('/api/v1/market/klines?source=biquote&symbol='+encodeURIComponent(biquoteSymbol(symbol))+'&interval='+encodeURIComponent(interval));
       const candles=(data.candles||[]).map(x=>({
         time:Number(x.time),
         open:Number(x.open),
