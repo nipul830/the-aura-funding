@@ -240,7 +240,7 @@ async function loginTerminal(){
   if(!loginId||!password){setTerminalLoginStatus('Enter Login ID and password');return}
   if(btn){btn.disabled=true;btn.textContent='Signing in…'}
   try{
-    const r=await fetch('https://aurafirming.in/api/terminal/login',{
+    const r=await fetch('/api/v1/terminal/login',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({loginId,password,mode:terminalRole})
     });
