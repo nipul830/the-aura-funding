@@ -47,6 +47,7 @@ app.get("/", async (req, res) => {
       if (upstream.ok) {
         const data = await upstream.json();
         user = data.user || null;
+        if (user?.role === "admin") return res.redirect("/admin");
       }
     }
     let html = await fs.readFile(path.join(__dirname, "public", "index.html"), "utf8");
@@ -91,18 +92,32 @@ function adminPage(file) {
   };
 }
 
+async function requireUserPageAuth(req, res, next) {
+  try {
+    const cookie = req.headers.cookie || "";
+    const upstream = await fetch(`${API}/api/v1/auth/me`, { headers: { Cookie: cookie } });
+    if (!upstream.ok) return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
+    const data = await upstream.json();
+    if (data.user?.role === "admin") return res.redirect("/admin");
+    req.user = data.user;
+    next();
+  } catch {
+    res.redirect("/login");
+  }
+}
+
 app.get("/admin", requirePageAuth, adminPage("admin.html"));
 app.get("/admin/accounts", requirePageAuth, adminPage("accounts.html"));
 app.get("/admin/plans", requirePageAuth, adminPage("admin-plans.html"));
 app.get("/admin/payments", requirePageAuth, adminPage("admin-payments.html"));
 app.get("/admin/content", requirePageAuth, adminPage("admin-content.html"));
-app.get("/user", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "user.html")));
-app.get("/user/trading", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "trading.html")));
-app.get("/user/plans", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "plans.html")));
-app.get("/user/checkout", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "checkout.html")));
-app.get("/user/position", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "position.html")));
-app.get("/user/terminal", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "terminal.html")));
-app.get("/user/settings", requirePageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "settings.html")));
-app.get("/user/profile", (req, res) => res.sendFile(path.join(__dirname, "public", "profile.html")));
+app.get("/user", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "user.html")));
+app.get("/user/trading", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "trading.html")));
+app.get("/user/plans", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "plans.html")));
+app.get("/user/checkout", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "checkout.html")));
+app.get("/user/position", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "position.html")));
+app.get("/user/terminal", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "terminal.html")));
+app.get("/user/settings", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "settings.html")));
+app.get("/user/profile", requireUserPageAuth, (req, res) => res.sendFile(path.join(__dirname, "public", "profile.html")));
 
 app.listen(port, () => console.log(`The Aura Funding UI listening on :${port}`));
