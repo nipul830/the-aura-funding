@@ -87,7 +87,7 @@ async function fetchBiquoteCandles(symbol, interval, latestOnly=false) {
 
 
 const TERMINAL_BIQUOTE_SYMBOLS={
-  "OANDA:XAUUSD":"XAUUSD",
+  "XAUUSD":"XAUUSD",
   "FX:EURUSD":"EURUSD",
   "FX:USDJPY":"USDJPY",
   "FX:GBPUSD":"GBPUSD",
@@ -126,7 +126,7 @@ app.get("/api/v1/terminal/market/klines",requireTerminalSession,async(req,res)=>
     res.status(502).json({ok:false,error:"Unable to load Biquote chart data",detail});
   }
 });
-const TERMINAL_CONTRACT_SIZES={"OANDA:XAUUSD":100,"FX:EURUSD":100000,"FX:GBPUSD":100000,"FX:USDJPY":100000,"FX:AUDUSD":100000,"BINANCE:BTCUSDT":1,"BINANCE:ETHUSDT":1,"BINANCE:SOLUSDT":1,"BINANCE:XRPUSDT":1,"INDEX:NAS100":1,"INDEX:DEX40":1,"INDEX:US30":1,"OIL:USOIL":1,"NASDAQ:AAPL":1,"NASDAQ:NVDA":1};
+const TERMINAL_CONTRACT_SIZES={"XAUUSD":100,"FX:EURUSD":100000,"FX:GBPUSD":100000,"FX:USDJPY":100000,"FX:AUDUSD":100000,"BINANCE:BTCUSDT":1,"BINANCE:ETHUSDT":1,"BINANCE:SOLUSDT":1,"BINANCE:XRPUSDT":1,"INDEX:NAS100":1,"INDEX:DEX40":1,"INDEX:US30":1,"OIL:USOIL":1,"NASDAQ:AAPL":1,"NASDAQ:NVDA":1};
 function terminalContractSize(symbol){return Number(TERMINAL_CONTRACT_SIZES[symbol]||1);}
 function terminalPnl(p,price){const e=Number(p.entry_price),q=Number(price),lot=Number(p.quantity);if(!Number.isFinite(e)||!Number.isFinite(q)||!Number.isFinite(lot)||e<=0||q<=0||lot<=0)return 0;let v=(p.side==="long"?q-e:e-q)*lot*terminalContractSize(p.symbol);if(p.symbol==="FX:USDJPY")v=v/q;return Number.isFinite(v)?v:0;}
 async function getTerminalAccount(userId){
