@@ -1,5 +1,8 @@
 import "dotenv/config";
 import express from "express";
+import fs from "fs/promises";
+import path from "path";
+import crypto from "crypto";
 import helmet from "helmet";
 import cors from "cors";
 import { Pool } from "pg";
@@ -14,7 +17,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "8mb" }));
 
 app.get("/health", async (_req, res) => {
   try {
@@ -149,6 +152,22 @@ app.patch("/api/v1/admin/content/faq/:id", requireAuth(pool,["admin"]), async (r
 app.delete("/api/v1/admin/content/faq/:id", requireAuth(pool,["admin"]), async (req,res)=>{
   try{await pool.query("DELETE FROM site_faq WHERE id=$1",[req.params.id]);res.json({ok:true});}
   catch(error){res.status(400).json({ok:false,error:error.message});}
+});
+
+app.post("/api/v1/admin/content/upload-image", requireAuth(pool,["admin"]), async (req,res)=>{
+  try{
+    const raw=String(req.body?.data||"");
+    const match=raw.match(/^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/);
+    if(!match) return res.status(400).json({ok:false,error:"Only JPG, PNG, WEBP or GIF images are allowed"});
+    const buffer=Buffer.from(match[2],"base64");
+    if(!buffer.length || buffer.length>5*1024*1024) return res.status(400).json({ok:false,error:"Image must be smaller than 5MB"});
+    const ext={jpeg:"jpg",png:"png",webp:"webp",gif:"gif"}[match[1].split("/")[1]];
+    const dir=path.resolve(process.cwd(),"../frontend/public/uploads");
+    await fs.mkdir(dir,{recursive:true});
+    const name=String(Date.now())+"-"+crypto.randomUUID()+"."+ext;
+    await fs.writeFile(path.join(dir,name),buffer);
+    res.status(201).json({ok:true,url:"/uploads/"+name});
+  }catch(error){res.status(400).json({ok:false,error:error.message});}
 });
 
 app.post("/api/v1/admin/content/story", requireAuth(pool,["admin"]), async (req,res)=>{
