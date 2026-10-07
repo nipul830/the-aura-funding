@@ -85,6 +85,47 @@ async function fetchBiquoteCandles(symbol, interval, latestOnly=false) {
   return all.slice(-MARKET_CANDLE_MAX);
 }
 
+
+const TERMINAL_BIQUOTE_SYMBOLS={
+  "OANDA:XAUUSD":"XAUUSD",
+  "FX:EURUSD":"EURUSD",
+  "FX:USDJPY":"USDJPY",
+  "FX:GBPUSD":"GBPUSD",
+  "BINANCE:BTCUSDT":"BTCUSD",
+  "BINANCE:ETHUSDT":"ETHUSD",
+  "BINANCE:SOLUSDT":"SOLUSD"
+};
+function terminalTokenHash(token){return crypto.createHash("sha256").update(String(token)).digest("hex");}
+async function requireTerminalSession(req,res,next){
+  try{
+    const auth=String(req.headers.authorization||"");
+    const token=auth.startsWith("Bearer ")?auth.slice(7).trim():"";
+    if(!token)return res.status(401).json({ok:false,error:"Terminal login required"});
+    const result=await pool.query(
+      "SELECT u.id,u.status,tc.status AS terminal_status FROM terminal_sessions ts JOIN users u ON u.id=ts.user_id JOIN terminal_credentials tc ON tc.user_id=u.id WHERE ts.token_hash=$1 AND ts.expires_at>now() LIMIT 1",
+      [terminalTokenHash(token)]
+    );
+    const row=result.rows[0];
+    if(!row||row.status!=="active"||row.terminal_status!=="active")return res.status(401).json({ok:false,error:"Terminal session expired or disabled"});
+    req.terminalUser=row;
+    next();
+  }catch(error){console.error("Terminal market auth error:",error);res.status(500).json({ok:false,error:"Terminal authentication failed"});}
+}
+app.get("/api/v1/terminal/market/klines",requireTerminalSession,async(req,res)=>{
+  try{
+    const requested=String(req.query?.symbol||"").toUpperCase();
+    const symbol=TERMINAL_BIQUOTE_SYMBOLS[requested];
+    const interval=String(req.query?.interval||"5m");
+    if(!symbol)return res.status(400).json({ok:false,error:"Unsupported chart symbol"});
+    if(!BIQUOTE_INTERVALS.has(interval))return res.status(400).json({ok:false,error:"Unsupported interval"});
+    const candles=await fetchBiquoteCandles(symbol,interval,false);
+    res.json({ok:true,source:"biquote",symbol:requested,interval,maxCandles:MARKET_CANDLE_MAX,candles});
+  }catch(error){
+    const detail=String(error?.message||"");
+    console.error("Terminal market data error:",detail);
+    res.status(502).json({ok:false,error:"Unable to load Biquote chart data",detail});
+  }
+});
 app.get("/api/v1/market/klines", requireAuth(pool), async (req,res)=>{
   try {
     const source=String(req.query?.source||"").toLowerCase();
