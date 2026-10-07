@@ -85,6 +85,7 @@
       })
       .catch(()=>{});
   };
+  if(window.__AURA_USER__) renderAccount(window.__AURA_USER__);
   syncAccount();
   window.addEventListener("pageshow",syncAccount);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")syncAccount()});
