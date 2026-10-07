@@ -126,6 +126,53 @@ app.get("/api/v1/terminal/market/klines",requireTerminalSession,async(req,res)=>
     res.status(502).json({ok:false,error:"Unable to load Biquote chart data",detail});
   }
 });
+const TERMINAL_CONTRACT_SIZES={"OANDA:XAUUSD":100,"FX:EURUSD":100000,"FX:GBPUSD":100000,"FX:USDJPY":100000,"FX:AUDUSD":100000,"BINANCE:BTCUSDT":1,"BINANCE:ETHUSDT":1,"BINANCE:SOLUSDT":1,"BINANCE:XRPUSDT":1,"INDEX:NAS100":1,"INDEX:DEX40":1,"INDEX:US30":1,"OIL:USOIL":1,"NASDAQ:AAPL":1,"NASDAQ:NVDA":1};
+function terminalContractSize(symbol){return Number(TERMINAL_CONTRACT_SIZES[symbol]||1);}
+function terminalPnl(p,price){const e=Number(p.entry_price),q=Number(price),lot=Number(p.quantity);if(!Number.isFinite(e)||!Number.isFinite(q)||!Number.isFinite(lot)||e<=0||q<=0||lot<=0)return 0;let v=(p.side==="long"?q-e:e-q)*lot*terminalContractSize(p.symbol);if(p.symbol==="FX:USDJPY")v=v/q;return Number.isFinite(v)?v:0;}
+async function getTerminalAccount(userId){
+ const q=await pool.query('SELECT ta.id,ta.initial_balance,ta.balance,ta.equity,ta.status,p.name AS plan_name,p.account_size,p.price,p.currency,rv.rules,rv.version AS rule_version FROM trading_accounts ta JOIN challenge_plans p ON p.id=ta.plan_id JOIN LATERAL(SELECT rules,version FROM rule_versions WHERE plan_id=p.id ORDER BY version DESC LIMIT 1) rv ON true WHERE ta.user_id=$1 ORDER BY ta.created_at DESC',[userId]);
+ return q.rows.find(a=>String(a.status).toLowerCase()==="active")||q.rows.find(a=>String(a.status).toLowerCase()!=="breached")||q.rows[0]||null;
+}
+function terminalAccountJson(a){return a?{...a,initialBalance:Number(a.initial_balance),balance:Number(a.balance),equity:Number(a.equity),accountSize:Number(a.account_size)}:null;}
+async function terminalPositions(accountId){
+ const q=await pool.query('SELECT id,symbol,side,quantity,entry_price,current_price,unrealized_pnl,status,opened_at,closed_at,stop_loss,take_profit FROM positions WHERE account_id=$1 ORDER BY opened_at DESC',[accountId]);
+ return q.rows.map(p=>({id:p.id,symbol:p.symbol,side:p.side==="long"?"BUY":"SELL",lot:Number(p.quantity),entryPrice:Number(p.entry_price),currentPrice:Number(p.current_price),pnl:Number(p.unrealized_pnl),unrealizedPnl:Number(p.unrealized_pnl),status:p.status,openedAt:p.opened_at,closedAt:p.closed_at,stopLoss:p.stop_loss==null?null:Number(p.stop_loss),takeProfit:p.take_profit==null?null:Number(p.take_profit)}));
+}
+app.get("/api/market/quotes",requireTerminalSession,async(req,res)=>{
+ try{const requested=String(req.query?.symbols||"").split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);const symbols=[...new Set(requested.length?requested:Object.keys(TERMINAL_BIQUOTE_SYMBOLS))].filter(x=>TERMINAL_BIQUOTE_SYMBOLS[x]);const quotes={};
+ await Promise.all(symbols.map(async symbol=>{try{const c=(await fetchBiquoteCandles(TERMINAL_BIQUOTE_SYMBOLS[symbol],"1m",true))[0];if(c){const price=Number(c.close);quotes[symbol]={symbol,price,bid:price,ask:price,time:Number(c.time)*1000,stale:false};}}catch(e){console.error("Quote error",symbol,e.message);}}));
+ res.json({ok:true,quotes});}catch(e){res.status(502).json({ok:false,error:"Market quote unavailable"});}
+});
+app.get("/api/trading/positions",requireTerminalSession,async(req,res)=>{
+ try{const account=await getTerminalAccount(req.terminalUser.id);if(!account)return res.status(403).json({ok:false,error:"No funded account available"});if(String(account.status).toLowerCase()!=="active")return res.status(403).json({ok:false,error:"Terminal account is not active"});res.json({ok:true,account:terminalAccountJson(account),positions:await terminalPositions(account.id)});}catch(e){res.status(500).json({ok:false,error:e.message});}
+});
+app.post("/api/trading/orders",requireTerminalSession,async(req,res)=>{
+ const client=await pool.connect();
+ try{
+  const account=await getTerminalAccount(req.terminalUser.id);if(!account)return res.status(403).json({ok:false,error:"No funded account available"});if(String(account.status).toLowerCase()!=="active")return res.status(403).json({ok:false,error:"Terminal account is not active"});
+  const symbol=String(req.body?.symbol||"").toUpperCase(),side=String(req.body?.side||"").toUpperCase(),lot=Number(req.body?.lot);
+  const sl=req.body?.stopLoss==null||req.body.stopLoss===""?null:Number(req.body.stopLoss),tp=req.body?.takeProfit==null||req.body.takeProfit===""?null:Number(req.body.takeProfit);
+  if(!TERMINAL_BIQUOTE_SYMBOLS[symbol])return res.status(400).json({ok:false,error:"Unsupported trading symbol"});
+  if(!["BUY","SELL"].includes(side)||!Number.isFinite(lot)||lot<=0)return res.status(400).json({ok:false,error:"Invalid order"});
+  const open=await client.query('SELECT COUNT(*)::int AS n FROM positions WHERE account_id=$1 AND status=$2',[account.id,"open"]);
+  const risk=evaluateRisk({rules:account.rules||{},metrics:{lot,openPositions:Number(open.rows[0].n)+1,profit:Number(account.balance)-Number(account.initial_balance),floatingLoss:0,dailyDrawdown:0,maxDrawdown:Math.max(0,(Number(account.initial_balance)-Number(account.equity))/Number(account.initial_balance)*100)}});
+  if(!risk.canTrade)return res.status(403).json({ok:false,error:"Trade blocked by risk rules",risk});
+  const c=(await fetchBiquoteCandles(TERMINAL_BIQUOTE_SYMBOLS[symbol],"1m",true))[0],price=Number(c?.close);if(!price)return res.status(502).json({ok:false,error:"Market price unavailable"});
+  await client.query("BEGIN");
+  const o=await client.query('INSERT INTO orders(account_id,symbol,side,quantity,order_type,status) VALUES($1,$2,$3,$4,$5,$6) RETURNING id',[account.id,symbol,side==="BUY"?"buy":"sell",""+lot,"market","filled"]);
+  const p=await client.query('INSERT INTO positions(account_id,symbol,side,quantity,entry_price,current_price,unrealized_pnl,status,stop_loss,take_profit) VALUES($1,$2,$3,$4,$5,$5,0,$6,$7,$8) RETURNING id,symbol,side,quantity,entry_price,current_price,opened_at,stop_loss,take_profit',[account.id,symbol,side==="BUY"?"long":"short",lot,price,"open",sl,tp]);
+  await client.query("COMMIT");const x=p.rows[0],fresh=await getTerminalAccount(req.terminalUser.id);
+  res.status(201).json({ok:true,orderId:o.rows[0].id,position:{id:x.id,symbol:x.symbol,side,lot:Number(x.quantity),entryPrice:Number(x.entry_price),currentPrice:Number(x.current_price),pnl:0,status:"open",openedAt:x.opened_at,stopLoss:x.stop_loss==null?null:Number(x.stop_loss),takeProfit:x.take_profit==null?null:Number(x.take_profit)},account:terminalAccountJson(fresh)});
+ }catch(e){await client.query("ROLLBACK").catch(()=>{});res.status(400).json({ok:false,error:e.message});}finally{client.release();}
+});
+app.patch("/api/trading/positions/:id",requireTerminalSession,async(req,res)=>{
+ try{const account=await getTerminalAccount(req.terminalUser.id);if(!account)return res.status(403).json({ok:false,error:"No funded account available"});const sl=req.body?.stopLoss==null||req.body.stopLoss===""?null:Number(req.body.stopLoss),tp=req.body?.takeProfit==null||req.body.takeProfit===""?null:Number(req.body.takeProfit);if((sl!==null&&!Number.isFinite(sl))||(tp!==null&&!Number.isFinite(tp)))return res.status(400).json({ok:false,error:"Invalid SL/TP"});const q=await pool.query('UPDATE positions SET stop_loss=$1,take_profit=$2 WHERE id=$3 AND account_id=$4 AND status=$5 RETURNING stop_loss,take_profit',[sl,tp,req.params.id,account.id,"open"]);if(!q.rows[0])return res.status(404).json({ok:false,error:"Open position not found"});res.json({ok:true,stopLoss:q.rows[0].stop_loss==null?0:Number(q.rows[0].stop_loss),takeProfit:q.rows[0].take_profit==null?0:Number(q.rows[0].take_profit)});}catch(e){res.status(400).json({ok:false,error:e.message});}
+});
+app.post("/api/trading/positions/:id/close",requireTerminalSession,async(req,res)=>{
+ const client=await pool.connect();
+ try{const account=await getTerminalAccount(req.terminalUser.id);if(!account)return res.status(403).json({ok:false,error:"No funded account available"});const q=await client.query('SELECT * FROM positions WHERE id=$1 AND account_id=$2 AND status=$3 FOR UPDATE',[req.params.id,account.id,"open"]);const p=q.rows[0];if(!p)return res.status(404).json({ok:false,error:"Open position not found"});let price=Number(req.body?.price);if(!price){const c=(await fetchBiquoteCandles(TERMINAL_BIQUOTE_SYMBOLS[p.symbol],"1m",true))[0];price=Number(c?.close);}if(!price)return res.status(502).json({ok:false,error:"Market price unavailable"});const pnl=terminalPnl(p,price);await client.query("BEGIN");await client.query('UPDATE positions SET current_price=$1,unrealized_pnl=$2,status=$3,closed_at=now() WHERE id=$4',[price,pnl,"closed",p.id]);await client.query("UPDATE trading_accounts SET balance=balance+$1,equity=equity+$1,updated_at=now() WHERE id=$2",[pnl,account.id]);await client.query("COMMIT");res.json({ok:true,pnl,price,account:terminalAccountJson(await getTerminalAccount(req.terminalUser.id))});}catch(e){await client.query("ROLLBACK").catch(()=>{});res.status(400).json({ok:false,error:e.message});}finally{client.release();}
+});
+
 app.get("/api/v1/market/klines", requireAuth(pool), async (req,res)=>{
   try {
     const source=String(req.query?.source||"").toLowerCase();
