@@ -135,7 +135,7 @@ body{background:#fff}
    <div class="symbol-picker">
      <button class="symbol-btn" id="symbolBtn" type="button">GOLD ▾</button>
      <div class="symbol-list" id="symbolList">
-       <button type="button" data-symbol="OANDA:XAUUSD" data-name="GOLD"><strong>GOLD</strong><span>XAUUSD</span></button>
+       <button type="button" data-symbol="XAUUSD" data-name="GOLD"><strong>GOLD</strong><span>XAUUSD</span></button>
        <button type="button" data-symbol="FX:EURUSD" data-name="EUR/USD"><strong>EUR/USD</strong><span>EURUSD</span></button>
        <button type="button" data-symbol="FX:GBPUSD" data-name="GBP/USD"><strong>GBP/USD</strong><span>GBPUSD</span></button>
        <button type="button" data-symbol="FX:USDJPY" data-name="USD/JPY"><strong>USD/JPY</strong><span>USDJPY</span></button>
@@ -175,7 +175,7 @@ let terminalRole='trader';
 let terminalSessionToken=sessionStorage.getItem('auraTerminalSession')||'';
 function terminalLoggedIn(){return Boolean(terminalSessionToken)}
 const AURA_SYMBOL_STORAGE='auraTerminalSymbol';
-const AURA_ALLOWED_SYMBOLS=['OANDA:XAUUSD','FX:EURUSD','FX:GBPUSD','FX:USDJPY','FX:AUDUSD','BINANCE:BTCUSDT','BINANCE:ETHUSDT','BINANCE:SOLUSDT','BINANCE:XRPUSDT','INDEX:NAS100','INDEX:DEX40','INDEX:US30','OIL:USOIL','NASDAQ:AAPL','NASDAQ:NVDA'];
+const AURA_ALLOWED_SYMBOLS=['XAUUSD','FX:EURUSD','FX:GBPUSD','FX:USDJPY','FX:AUDUSD','BINANCE:BTCUSDT','BINANCE:ETHUSDT','BINANCE:SOLUSDT','BINANCE:XRPUSDT','INDEX:NAS100','INDEX:DEX40','INDEX:US30','OIL:USOIL','NASDAQ:AAPL','NASDAQ:NVDA'];
 const savedAuraSymbol=localStorage.getItem(AURA_SYMBOL_STORAGE)||'';
 const lastTradeSymbol=localStorage.getItem('auraLastTradeSymbol')||'';
 const chartUrlSymbol=new URLSearchParams(location.search).get('symbol')||'';
@@ -183,7 +183,7 @@ let currentSymbol=AURA_ALLOWED_SYMBOLS.includes(chartUrlSymbol)
   ? chartUrlSymbol
   : (AURA_ALLOWED_SYMBOLS.includes(lastTradeSymbol)
     ? lastTradeSymbol
-    : (AURA_ALLOWED_SYMBOLS.includes(savedAuraSymbol)?savedAuraSymbol:'OANDA:XAUUSD'));
+    : (AURA_ALLOWED_SYMBOLS.includes(savedAuraSymbol)?savedAuraSymbol:'XAUUSD'));
 let latestQuote=null;
 let marketRequest=null;
 let terminalPositions=[];
@@ -533,7 +533,7 @@ async function endRiskDrag(ev){
 }
 function chartContractSize(symbol){
   const sizes={
-    'OANDA:XAUUSD':100,'FX:EURUSD':100000,'FX:GBPUSD':100000,'FX:USDJPY':100000,'FX:AUDUSD':100000,
+    'XAUUSD':100,'FX:EURUSD':100000,'FX:GBPUSD':100000,'FX:USDJPY':100000,'FX:AUDUSD':100000,
     'BINANCE:BTCUSDT':1,'BINANCE:ETHUSDT':1,'BINANCE:SOLUSDT':1,'BINANCE:XRPUSDT':1,
     'INDEX:NAS100':1,'INDEX:DEX40':1,'INDEX:US30':1,'OIL:USOIL':1,'NASDAQ:AAPL':1,'NASDAQ:NVDA':1
   };
