@@ -224,6 +224,7 @@ async function terminalApi(path,opt={}){
   if(!terminalSessionToken)throw new Error('Terminal login required');
   const headers=opt.headers||{};
   headers.Authorization='Bearer '+terminalSessionToken;
+  headers['X-Terminal-Token']=terminalSessionToken;
   if(opt.body&&typeof opt.body==='object'&&!(opt.body instanceof FormData)){
     headers['Content-Type']='application/json';
     opt.body=JSON.stringify(opt.body);
