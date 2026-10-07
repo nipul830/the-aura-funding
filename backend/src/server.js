@@ -124,7 +124,12 @@ app.get("/api/v1/market/klines", requireAuth(pool), async (req,res)=>{
     }else return res.status(400).json({ok:false,error:"Unsupported market source"});
     res.json({ok:true,source,symbol,interval,maxCandles:MARKET_CANDLE_MAX,candles});
   }catch(error){
-    if(String(error?.message||"").includes("OANDA market data is not configured")) return res.status(503).json({ok:false,error:"OANDA market data is not configured on the server"});
+    const message=String(error?.message||"");
+    console.error("Market data error:",message);
+    if(message.includes("OANDA market data is not configured")) return res.status(503).json({ok:false,error:"OANDA market data is not configured on the server"});
+    if(source==="oanda"){
+      return res.status(502).json({ok:false,error:"OANDA market data request failed",detail:message});
+    }
     res.status(502).json({ok:false,error:"Unable to load market data"});
   }
 });
