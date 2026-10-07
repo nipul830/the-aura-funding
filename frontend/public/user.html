@@ -97,7 +97,8 @@ async function load(){
     if(terminalBody) terminalBody.innerHTML='<div class="terminal-credential-grid"><div class="terminal-field"><span>Login ID</span><button type="button" class="terminal-secret" data-value="'+esc(cr.loginId)+'" data-revealed="0">••••••••••</button><button type="button" class="copy-cred" data-copy="'+esc(cr.loginId)+'">COPY</button></div><div class="terminal-field"><span>Password</span><button type="button" class="terminal-secret" data-value="'+esc(cr.password)+'" data-revealed="0">••••••••••</button><button type="button" class="copy-cred" data-copy="'+esc(cr.password)+'">COPY</button></div><div class="terminal-field"><span>Investor Password</span><button type="button" class="terminal-secret" data-value="'+esc(cr.investorPassword)+'" data-revealed="0">••••••••••</button><button type="button" class="copy-cred" data-copy="'+esc(cr.investorPassword)+'">COPY</button></div></div><div class="terminal-note">Use these credentials to enter the trading terminal.</div>';
   }else if(terminalBody){ terminalBody.textContent="Terminal credentials unavailable. Please refresh."; }
   terminalBody?.addEventListener("click",(e)=>{
-    const secret=e.target.closest(".terminal-secret"); if(secret){secret.textContent=secret.dataset.revealed==="1"?"••••••••••":secret.dataset.value;secret.dataset.revealed=secret.dataset.revealed==="1"?"0":"1";return;}\n    const btn=e.target.closest(".copy-cred"); if(!btn) return;
+    const secret=e.target.closest(".terminal-secret"); if(secret){secret.textContent=secret.dataset.revealed==="1"?"••••••••••":secret.dataset.value;secret.dataset.revealed=secret.dataset.revealed==="1"?"0":"1";return;}
+    const btn=e.target.closest(".copy-cred"); if(!btn) return;
     navigator.clipboard?.writeText(btn.dataset.copy||"").then(()=>{
       const old=btn.textContent; btn.textContent="COPIED"; btn.classList.add("copied");
       setTimeout(()=>{btn.textContent=old;btn.classList.remove("copied")},1200);
