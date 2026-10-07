@@ -67,15 +67,24 @@ async function fetchBinanceCandles(symbol, interval, latestOnly=false) {
 
 async function fetchOandaCandles(instrument, interval, latestOnly=false) {
   const token=String(process.env.OANDA_API_TOKEN||"").trim();
-  const accountId=String(process.env.OANDA_ACCOUNT_ID||"").trim();
+  let accountId=String(process.env.OANDA_ACCOUNT_ID||"").trim();
   const baseUrl=String(process.env.OANDA_API_URL||"https://api-fxpractice.oanda.com").replace(/\/$/,"");
   const granularity=OANDA_GRANULARITY[interval];
-  if(!token||!accountId) throw new Error("OANDA market data is not configured");
+  if(!token) throw new Error("OANDA market data is not configured");
   if(!granularity) throw new Error("Unsupported OANDA interval");
+  const authHeaders={Authorization:"Bearer "+token,Accept:"application/json"};
+  if(!accountId){
+    const accountsUrl=new URL(baseUrl+"/v3/accounts");
+    const accountsResponse=await fetch(accountsUrl,{headers:authHeaders});
+    if(!accountsResponse.ok) throw new Error("OANDA account discovery failed");
+    const accountsBody=await accountsResponse.json();
+    accountId=String(accountsBody?.accounts?.[0]?.id||"").trim();
+    if(!accountId) throw new Error("OANDA account ID not found");
+  }
   const request=async params=>{
     const url=new URL(baseUrl+"/v3/accounts/"+encodeURIComponent(accountId)+"/instruments/"+encodeURIComponent(instrument)+"/candles");
     Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,String(v)));
-    const upstream=await fetch(url,{headers:{Authorization:"Bearer "+token,Accept:"application/json"}});
+    const upstream=await fetch(url,{headers:authHeaders});
     if(!upstream.ok) throw new Error("OANDA returned "+upstream.status);
     return upstream.json();
   };
