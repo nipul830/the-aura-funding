@@ -1,1 +1,191 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Positions · THE AURA FUNDING</title><link rel="stylesheet" href="/style.css"></head><body><div class="app"><aside class="side"><div class="brand">THE AURA <span>FUNDING</span></div><nav class="bottom-nav"><a class="" href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z"/></svg><span>Home</span></a><a class="active" href="/user"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg><span>Dashboard</span></a><a class="" href="/user/plans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6Z"/></svg><span>Plans</span></a><a class="" href="/user/terminal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10m5 10V4m5 16v-7m5 7V7"/></svg><span>Terminal</span></a><a class="" href="/user/settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm8 4a8 8 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a8 8 0 0 0-2.1-1.2L15 3h-4l-.4 2.7a8 8 0 0 0-2.1 1.2l-2.4-1-2 3.4 2 1.5A8 8 0 0 0 6 12c0 .4 0 .8.1 1.2l-2 1.5 2.4-1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/></svg><span>Settings</span></a></nav></aside><main class="main"><div class="top"><div class="title"><h1>Positions</h1><div class="muted">Manage your trades</div></div></div><div class="card"><h2>Open Positions</h2><table class="table"><thead><tr><th>Symbol</th><th>Side</th><th>Volume</th><th>Entry</th><th>Current</th><th>P&L</th></tr></thead><tbody><tr><td>XAUUSD</td><td class="green">BUY</td><td>0.20</td><td>3,845.20</td><td>3,849.70</td><td class="green">+$90.00</td></tr><tr><td>BTCUSD</td><td class="red">SELL</td><td>0.01</td><td>124,820</td><td>125,010</td><td class="red">-$1.90</td></tr></tbody></table></div></main></div></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Positions — THE AURA FUNDING</title><link rel="stylesheet" href="aura.css">
+<style>
+body{background:#fff;color:#182332}.positions-page{padding:22px 16px 105px;max-width:760px;margin:auto;font-family:Arial,Helvetica,sans-serif}.positions-page h1{margin:0 0 6px;font-size:28px}.account-top{background:#050505;color:#fff;border-radius:0 0 20px 20px;margin:-22px -16px 16px;padding:0 0 7px;box-shadow:0 4px 14px #0008;overflow:hidden;border:1px solid #242424}.account-compact{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;min-height:60px;padding:8px 16px 5px}.account-demo{justify-self:start;background:#fff;color:#111;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:900}.account-summary{display:flex;justify-content:center;align-items:baseline;gap:7px;white-space:nowrap}.account-summary .balance-main{font-size:18px;font-weight:900;color:#fff}.account-summary .pnl-main{font-size:16px;font-weight:900}.account-summary .pnl-main.positive{color:#008a5b}.account-summary .pnl-main.negative{color:#a80038}.account-toggle{justify-self:end;width:34px;height:34px;border:0;border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font-size:22px;line-height:1;display:grid;place-items:center}.account-toggle .arrow{display:block;transform:translateY(2px);transition:transform .18s}.account-top.expanded .account-toggle .arrow{transform:rotate(180deg) translateY(-2px)}.account-details{display:none;padding:5px 16px 12px}.account-top.expanded .account-details{display:grid;grid-template-columns:repeat(3,1fr);column-gap:14px;row-gap:11px}.account-detail .detail-label{display:block;color:#aaa;font-size:10px;font-weight:600;margin-bottom:3px}.account-detail .detail-value{display:block;color:#f5f5f5;font-size:15px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.account-detail .detail-value.negative{color:#a80038}.account-detail .detail-value.positive{color:#008a5b}.account-expanded-logout{grid-column:3;justify-self:end;border:1px solid #333;background:#151515;color:#fff;border-radius:16px;padding:4px 9px;font-size:9px;font-weight:800}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px;background:#f3f5f7;padding:4px;border-radius:12px}.tab{border:0;background:transparent;border-radius:9px;padding:11px 8px;font-weight:800;color:#687786;cursor:pointer}.tab.active{background:#fff;color:#182332;box-shadow:0 2px 8px #00000010}.sub{color:#7b8793;font-size:13px;margin-bottom:18px}.sub-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}.sub-row .sub{margin-bottom:0}.close-all{border:1px solid #e0e5e9;background:#fff;color:#182332;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer}.close-all:disabled{opacity:.5}.position-card{position:relative}.position-card .pos-head{padding-right:38px}.position-card .close-position{position:absolute;top:8px;right:8px;margin:0;width:30px;height:30px;border-radius:50%;padding:0;background:#fff;color:#e6004d;border:1px solid #e0e5e9;font-size:0;font-weight:900;line-height:1}.position-card .close-position::before{content:"×";font-size:22px}.position-card .close-position:disabled{opacity:.5}.position-card .close-position + .open-chart{margin-top:14px}.position-card{border:1px solid #e0e5e9;border-radius:16px;padding:16px;margin-bottom:12px;background:#fff;box-shadow:0 5px 18px #0000000d}.pos-head{display:flex;justify-content:space-between;align-items:center}.side-buy{color:#00a875;font-weight:800}.side-sell{color:#e6004d;font-weight:800}.pos-symbol{font-weight:800}.pos-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;color:#687786;font-size:12px}.pos-meta b{display:block;color:#182332;font-size:14px;margin-top:3px}.close-position{margin-top:14px;width:100%;height:42px;border:0;border-radius:10px;background:#182839;color:#fff;font-weight:800;font-size:13px}.close-position:disabled{opacity:.55}.open-chart{margin-top:10px;width:100%;height:40px;border:1px solid #dce2e7;border-radius:10px;background:#f7f8fa;color:#182332;font-weight:800;font-size:13px}.empty{text-align:center;padding:70px 20px;color:#7b8793}.bottom-nav{position:fixed;left:0;right:0;bottom:0;height:84px;background:#fff;border-top:1px solid #e0e5e9;display:grid;grid-template-columns:repeat(3,1fr);z-index:50;padding-bottom:env(safe-area-inset-bottom)}.bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#68798a;text-decoration:none;font-size:14px;font-weight:600}.bottom-nav a.active{color:#60768a}.bn-icon{font-size:28px;line-height:1}.bn-label{font-size:14px}
+@media(max-width:760px){
+.position-card{padding:9px;margin-bottom:7px;border-radius:11px}
+.pos-head{font-size:12px}
+.side-buy,.side-sell{font-size:15px}
+.pos-symbol{font-size:13px}
+.pos-meta{grid-template-columns:repeat(3,1fr);gap:4px 7px;margin-top:7px;font-size:9px}
+.pos-meta b{font-size:11px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.close-position,.open-chart{margin-top:7px;height:30px;border-radius:7px;font-size:10px}
+.position-card .open-chart{width:calc(50% - 3px);display:inline-block;margin-right:3px}
+.position-card .close-position{position:absolute;top:7px;right:7px;width:28px;height:28px;margin:0;border-radius:50%;display:grid;place-items:center}.position-card .open-chart{width:100%;display:block;margin:7px 0 0}
+}
+@media(min-width:761px){.bottom-nav{display:none}}
+</style></head>
+<body>
+<main class="positions-page"><div class="account-top" id="positionAccountPanel"><div class="account-compact"><div class="account-demo" id="positionPhaseLabel">TRADING</div><div class="account-summary"><span class="balance-main" id="positionBalance">—</span><span class="pnl-main" id="positionHeaderPnl">+$0.00</span></div><button class="account-toggle" id="positionAccountToggle" type="button" aria-expanded="false"><span class="arrow">⌄</span></button></div><div class="account-details" id="positionAccountDetails"><div class="account-detail"><span class="detail-label">Balance</span><span class="detail-value" id="detailPositionBalance">—</span></div><div class="account-detail"><span class="detail-label">Floating Profit/Loss</span><span class="detail-value" id="detailPositionPnl">—</span></div><div class="account-detail"><span class="detail-label">Equity</span><span class="detail-value" id="detailPositionEquity">—</span></div><div class="account-detail"><span class="detail-label">Margin</span><span class="detail-value" id="detailPositionMargin">—</span></div><div class="account-detail"><span class="detail-label">Leverage</span><span class="detail-value" id="detailPositionLeverage">—</span></div><div class="account-detail"><span class="detail-label">Free Margin</span><span class="detail-value" id="detailPositionFreeMargin">—</span></div><div class="account-detail"><span class="detail-label">Margin Level</span><span class="detail-value" id="detailPositionMarginLevel">—</span></div><div class="account-detail"><span class="detail-label">Risk Assessment</span><span class="detail-value" id="detailPositionRisk">Safe</span></div><div class="account-detail"><span class="detail-label">Status</span><span class="detail-value" id="detailPositionStatus">LIVE</span></div><button class="account-expanded-logout" id="positionExpandedLogout" type="button">Logout</button></div></div>
+<div class="tabs"><button class="tab active" data-tab="open">Open</button><button class="tab" data-tab="closed">Closed</button></div><div class="sub-row"><div class="sub" id="tabSub">Open trades</div><button class="close-all" id="closeAllTrades" type="button">Close All</button></div><div id="positions"></div></main>
+<nav class="bottom-nav"><a href="/user"><span class="bn-icon">⌂</span><span class="bn-label">Dashboard</span></a><a href="/user/terminal"><span class="bn-icon">▱</span><span class="bn-label">Charts</span></a><a href="/user/position" class="active"><span class="bn-icon">♮</span><span class="bn-label">Position</span></a></nav>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="firebase-config.js?v=6"></script>
+<script src="aura-account.js"></script>
+<script src="position-pnl-fix.js"></script>
+<script>
+let terminalSessionToken=sessionStorage.getItem('auraTerminalSession')||'';
+async function positionApi(path,opt={}){
+  if(!terminalSessionToken)throw new Error('Terminal login required');
+  const headers=opt.headers||{};headers.Authorization='Bearer '+terminalSessionToken;
+  if(opt.body&&typeof opt.body==='object'){headers['Content-Type']='application/json';opt.body=JSON.stringify(opt.body)}
+  const res=await fetch('https://aurafirming.in'+path,{...opt,headers});
+  let data={};try{data=await res.json()}catch(e){}
+  if(!res.ok)throw new Error(data.detail||data.error||('Request failed (HTTP '+res.status+')'));return data;
+}
+function money(v){return '$'+Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function price(v){return Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:5})}
+function phaseLabel(value){
+  const v=String(value||'').trim().toLowerCase();
+  if(v.includes('funded'))return 'FUNDED';
+  if(v.includes('phase 2')||v.includes('phase2'))return 'PHASE 2';
+  if(v.includes('phase 1')||v.includes('phase1'))return 'PHASE 1';
+  if(v.includes('2 step')||v.includes('2-step'))return 'PHASE 1';
+  return 'PHASE 1';
+}
+let closeAllRunning=false;
+async function closeAllOpenTrades(){
+  if(closeAllRunning)return;
+  const btn=document.getElementById('closeAllTrades');
+  if(currentTab!=='open'||!livePositions.length){return;}
+  closeAllRunning=true;if(btn)btn.disabled=true;
+  try{
+    while(document.querySelector('.position-card .close-position:not(:disabled)')){
+      const b=document.querySelector('.position-card .close-position:not(:disabled)');
+      b.click();
+      await new Promise(r=>setTimeout(r,150));
+      if(!document.querySelector('.position-card .close-position:not(:disabled)'))break;
+    }
+    await loadPositions().catch(()=>{});
+  }finally{closeAllRunning=false;if(btn)btn.disabled=false;}
+}
+let livePositions=[];
+let liveBalance=0;
+let currentTab=sessionStorage.getItem('auraPositionTab')||'open';
+let tabData={open:[],closed:[]};
+let liveQuoteRequest=false;
+document.getElementById('closeAllTrades')?.addEventListener('click',closeAllOpenTrades);
+
+function contractSize(symbol){
+  if(symbol==='OANDA:XAUUSD')return 100;
+  if(symbol==='FX:EURUSD'||symbol==='FX:GBPUSD'||symbol==='FX:AUDUSD'||symbol==='FX:USDJPY')return 100000;
+  return 1;
+}
+function calcLivePnl(p,price){
+  const entry=Number(p.entryPrice||0),lot=Number(p.lot||0),q=Number(price||0);
+  if(!entry||!q||!lot)return 0;
+  let v=(p.side==='BUY'?q-entry:entry-q)*lot*contractSize(p.symbol);
+  if(p.symbol==='FX:USDJPY')v/=q;
+  return Number.isFinite(v)?v:0;
+}
+function updateLiveMarginMetrics(){
+  const eq=liveBalance+livePositions.reduce((sum,p)=>sum+calcLivePnl(p,Number(p.currentPrice||p.entryPrice||0)),0);
+  let margin=0;
+  for(const p of livePositions){
+    const lev=Number(p.leverage||0),lot=Number(p.lot||0),px=Number(p.currentPrice||p.entryPrice||0);
+    let spec=null;
+    if(p.symbol==='OANDA:XAUUSD')spec={contractSize:100,kind:'gold'};
+    else if(['FX:EURUSD','FX:GBPUSD','FX:AUDUSD'].includes(p.symbol))spec={contractSize:100000,kind:'forex'};
+    else if(p.symbol==='FX:USDJPY')spec={contractSize:100000,kind:'forex-jpy'};
+    else if(['BINANCE:BTCUSDT','BINANCE:ETHUSDT','BINANCE:SOLUSDT','BINANCE:XRPUSDT'].includes(p.symbol))spec={contractSize:1,kind:'crypto'};
+    if(!spec||!lev||!lot||!px)continue;
+    const notional=spec.kind==='forex-jpy'?Math.abs(lot*spec.contractSize):Math.abs(px*lot*spec.contractSize);
+    margin+=notional/lev;
+  }
+  margin=Number(margin.toFixed(2));
+  const free=Number((eq-margin).toFixed(2));
+  const level=margin>0?(eq/margin)*100:null;
+  const risk=margin<=0?'Safe':level>=200?'Safe':level>=100?'Medium':'High';
+  const setp=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
+  setp('detailPositionEquity',money(eq));setp('detailPositionMargin',money(margin));setp('detailPositionFreeMargin',money(free));setp('detailPositionMarginLevel',level==null?'∞':level.toFixed(2)+'%');setp('detailPositionRisk',risk);
+}
+function paintLivePositions(){
+  if(currentTab!=='open'||!livePositions.length){updateLiveMarginMetrics();return;}
+  let openPnl=0;
+  document.querySelectorAll('.position-card').forEach((card,i)=>{
+    const p=livePositions[i];if(!p)return;
+    const current=Number(p.currentPrice||p.entryPrice||0),pnl=calcLivePnl(p,current);
+    openPnl+=pnl;
+    const values=card.querySelectorAll('.pos-meta b');
+    if(values[2])values[2].textContent=price(current);
+    if(values[3]){values[3].textContent=(pnl>=0?'+':'')+money(pnl);values[3].style.color=pnl>=0?'#00a875':'#e6004d';}
+  });
+  const pnlEl=document.getElementById('positionHeaderPnl'); if(pnlEl){pnlEl.textContent=(openPnl>=0?'+':'')+money(openPnl);pnlEl.classList.toggle('positive',openPnl>=0);pnlEl.classList.toggle('negative',openPnl<0);} const dp=document.getElementById('detailPositionPnl'); if(dp){dp.textContent=(openPnl>=0?'+':'')+money(openPnl);dp.classList.toggle('negative',openPnl<0);} updateLiveMarginMetrics();
+}
+async function refreshLivePnl(){
+  if(liveQuoteRequest||!livePositions.length||currentTab!=='open')return;
+  liveQuoteRequest=true;
+  try{
+    const symbols=[...new Set(livePositions.map(p=>p.symbol).filter(Boolean))].join(',');
+    const data=await positionApi('/api/market/quotes?symbols='+encodeURIComponent(symbols));
+    for(const p of livePositions){const q=Number(data.quotes?.[p.symbol]?.price||0);if(q)p.currentPrice=q;}
+    paintLivePositions();
+  }catch(e){}finally{liveQuoteRequest=false}
+}
+function renderCards(items){
+  const el=document.getElementById('positions');
+  if(!items.length){
+    const msg=currentTab==='open'?'No open trades yet.':'No closed trades yet.';
+    el.innerHTML='<div class="empty">'+msg+'</div>';return;
+  }
+  el.innerHTML=items.map(p=>{
+    const isClosed=currentTab==='closed';
+    const pnl=isClosed?Number(p.realizedPnl||p.pnl||0):calcLivePnl(p,p.currentPrice||p.entryPrice);
+    const opened=p.openedAt?new Date(p.openedAt).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+    const closed=p.closedAt?new Date(p.closedAt).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+    return '<article class="position-card"><div class="pos-head"><span class="'+(p.side==='BUY'?'side-buy':'side-sell')+'">'+p.side+'</span><span class="pos-symbol">'+(p.name||p.symbol)+'</span></div><div class="pos-meta"><div>Lot<b>'+p.lot+'</b></div><div>Entry<b>'+price(p.entryPrice)+'</b></div><div>'+(isClosed?'Close':'Current')+'<b>'+price(isClosed?p.closePrice:p.currentPrice)+'</b></div><div>P&L<b style="color:'+(pnl>=0?'#00a875':'#e6004d')+'">'+(pnl>=0?'+':'')+money(pnl)+'</b></div><div>SL<b>'+(p.stopLoss?price(p.stopLoss):'—')+'</b></div><div>TP<b>'+(p.takeProfit?price(p.takeProfit):'—')+'</b></div><div>Open time<b>'+opened+'</b></div>'+(isClosed?'<div>Close time<b>'+closed+'</b></div>':'')+'</div>'+(currentTab==='open'?'<button class="open-chart" type="button" data-symbol="'+String(p.symbol||'').replace(/"/g,'&quot;')+'">Open Chart</button><button class="close-position" data-id="'+p.id+'">Close Trade</button>':'')+'</article>';
+  }).join('');
+  if(currentTab==='open')document.querySelectorAll('.open-chart').forEach(btn=>btn.addEventListener('click',()=>{ const symbol=btn.dataset.symbol; if(symbol) location.href='terminal.html?symbol='+encodeURIComponent(symbol); }));
+  if(currentTab==='open')document.querySelectorAll('.close-position').forEach(btn=>btn.addEventListener('click',async()=>{
+    btn.disabled=true;btn.textContent='Closing…';
+    try{
+      const id=String(btn.dataset.id);
+      const data=await positionApi('/api/trading/positions/'+encodeURIComponent(id)+'/close',{method:'POST'});
+      const closed=tabData.open.find(x=>String(x.id)===id);
+      tabData.open=(tabData.open||[]).filter(x=>String(x.id)!==id);
+      if(closed){
+        tabData.closed=[{...closed,status:'closed',closePrice:Number(data.closePrice||closed.currentPrice||closed.entryPrice||0),realizedPnl:Number(data.realizedPnl||0),closedAt:new Date().toISOString()},...(tabData.closed||[])];
+      }
+      if(data.account){
+        liveBalance=Number(data.account.balance||liveBalance);
+        document.getElementById('positionBalance').textContent=money(liveBalance);
+        document.getElementById('detailPositionBalance').textContent=money(liveBalance);
+      }
+      livePositions=tabData.open;
+      renderCurrentTab();
+      loadPositions().catch(()=>{});
+    }
+    catch(e){btn.disabled=false;btn.textContent='Close Trade';if(String(e&&e.message||'').toLowerCase().includes('already closed')){tabData.open=(tabData.open||[]).filter(x=>String(x.id)!==String(btn.dataset.id));livePositions=tabData.open;renderCurrentTab();loadPositions().catch(()=>{});return;}alert(e.message)}
+  }));
+}
+function renderCurrentTab(){
+  const labels={open:'Open trades',closed:'Closed trades'};
+  document.getElementById('tabSub').textContent=labels[currentTab];
+  renderCards(tabData[currentTab]||[]);
+  if(currentTab==='open'){livePositions=tabData.open;paintLivePositions();}
+}
+document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===currentTab)); document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{currentTab=btn.dataset.tab;sessionStorage.setItem('auraPositionTab',currentTab);document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===btn));renderCurrentTab();}));
+
+function renderPositionData(data){
+  const phaseEl=document.getElementById('positionPhaseLabel'); if(phaseEl)phaseEl.textContent=phaseLabel(data.account?.challenge);
+  liveBalance=Number(data.account?.balance||0);
+  document.getElementById('positionBalance').textContent=money(liveBalance); document.getElementById('detailPositionBalance').textContent=money(liveBalance);
+  const initialPnl=tabData.open.reduce((sum,p)=>sum+calcLivePnl(p,p.currentPrice||p.entryPrice),0); const pnlEl=document.getElementById('positionHeaderPnl'); if(pnlEl){pnlEl.textContent=(initialPnl>=0?'+':'')+money(initialPnl);pnlEl.classList.toggle('positive',initialPnl>=0);pnlEl.classList.toggle('negative',initialPnl<0);} const dp=document.getElementById('detailPositionPnl'); if(dp)dp.textContent=(initialPnl>=0?'+':'')+money(initialPnl); const eq=liveBalance+initialPnl; const setp=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v}; setp('detailPositionEquity',money(eq)); setp('detailPositionMargin',money(Number(data.account?.margin||0))); setp('detailPositionFreeMargin',money(Number(data.account?.freeMargin??eq))); setp('detailPositionMarginLevel',data.account?.marginLevel==null?'∞':Number(data.account.marginLevel).toFixed(2)+'%'); setp('detailPositionLeverage',data.account?.leverage?('1:'+data.account.leverage):'—'); setp('detailPositionRisk',data.account?.riskFactor||'Safe'); setp('detailPositionStatus','LIVE');
+  tabData.open=(data.open||data.positions||[]).map(p=>({...p,currentPrice:Number(p.currentPrice||p.entryPrice||0)}));
+  tabData.closed=data.closed||[];
+  livePositions=tabData.open;
+  renderCurrentTab();
+}
+async function loadPositions(){
+  const data=await positionApi('/api/trading/history');
+  renderPositionData(data);
+}
+if(!terminalSessionToken){location.replace('terminal.html');}
+else{loadPositions().catch(e=>{
+  if(/revoked|expired|not active|Terminal login required/i.test(e.message||'')){sessionStorage.removeItem('auraTerminalSession');sessionStorage.removeItem('auraTerminalRole');location.replace('terminal.html');return}
+  document.getElementById('positions').innerHTML='<div class="empty">'+e.message+'</div>';
+});}
+setInterval(()=>{if(terminalSessionToken&&!closeAllRunning)loadPositions().catch(()=>{});},3000);window.addEventListener('focus',()=>{if(terminalSessionToken&&!closeAllRunning)loadPositions().catch(()=>{});});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&terminalSessionToken&&!closeAllRunning)loadPositions().catch(()=>{});});
+const positionAccountToggle=document.getElementById('positionAccountToggle'); if(positionAccountToggle)positionAccountToggle.addEventListener('click',()=>{const panel=document.getElementById('positionAccountPanel');const open=panel.classList.toggle('expanded');positionAccountToggle.setAttribute('aria-expanded',String(open));}); const positionLogout=document.getElementById('positionExpandedLogout'); if(positionLogout)positionLogout.addEventListener('click',()=>{sessionStorage.removeItem('auraTerminalSession');sessionStorage.removeItem('auraTerminalRole');location.href='terminal.html';});
+setInterval(refreshLivePnl,3000);</script></body></html>
