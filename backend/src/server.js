@@ -367,8 +367,17 @@ app.post("/api/v1/terminal/login", async (req, res) => {
     if (!loginId || !password) return res.status(400).json({ ok:false, error:"Login ID and password are required" });
     const session = await terminalLogin(pool, loginId, password);
     const accountResult = await pool.query(
-      `SELECT id, plan_name, account_size, initial_balance, balance, equity, status, phase
-       FROM accounts WHERE user_id=$1 ORDER BY created_at DESC`,
+      `SELECT ta.id, ta.initial_balance, ta.balance, ta.equity, ta.status,
+              p.name AS plan_name, p.account_size, p.price, p.currency,
+              rv.rules, rv.version AS rule_version
+       FROM trading_accounts ta
+       JOIN challenge_plans p ON p.id=ta.plan_id
+       JOIN LATERAL (
+         SELECT rules,version FROM rule_versions
+         WHERE plan_id=p.id ORDER BY version DESC LIMIT 1
+       ) rv ON true
+       WHERE ta.user_id=$1
+       ORDER BY ta.created_at DESC`,
       [session.userId]
     );
     const active = accountResult.rows.find(a => String(a.status||"").toLowerCase() !== "breached") || accountResult.rows[0] || null;
