@@ -71,10 +71,23 @@
     const b=document.getElementById("heroAccountBtn");
     if(b){b.href=u.role==="admin"?"/admin":"/user";b.textContent="Dashboard";}
   };
-  try{const cached=JSON.parse(localStorage.getItem("aura_user")||"null");renderAccount(cached)}catch{}
-  fetch("/api/v1/auth/me",{credentials:"same-origin",cache:"no-store"})
-    .then(r=>r.ok?r.json():null).then(d=>{if(d?.user){localStorage.setItem("aura_user",JSON.stringify(d.user));renderAccount(d.user)}})
-    .catch(()=>{});
+  const syncAccount=()=>{
+    try{const cached=JSON.parse(localStorage.getItem("aura_user")||"null");renderAccount(cached)}catch{}
+    fetch("/api/v1/auth/me",{credentials:"same-origin",cache:"no-store"})
+      .then(r=>r.ok?r.json():null)
+      .then(d=>{
+        if(d?.user){
+          localStorage.setItem("aura_user",JSON.stringify(d.user));
+          renderAccount(d.user);
+        }else{
+          localStorage.removeItem("aura_user");
+        }
+      })
+      .catch(()=>{});
+  };
+  syncAccount();
+  window.addEventListener("pageshow",syncAccount);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")syncAccount()});
 })();
 </script></body>
 </html>
