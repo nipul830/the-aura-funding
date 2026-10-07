@@ -32,6 +32,57 @@ app.get("/api/v1", (_req, res) => {
   res.json({ service: "The Aura Funding API", version: "v1" });
 });
 
+const MARKET_CANDLE_MAX = 50000;
+const MARKET_SYMBOLS = new Set(["PAXGUSDT","BTCUSDT","ETHUSDT","SOLUSDT"]);
+
+app.get("/api/v1/market/klines", requireAuth(pool), async (req, res) => {
+  try {
+    const symbol = String(req.query?.symbol || "").toUpperCase();
+    const interval = String(req.query?.interval || "5m");
+    const allowedIntervals = new Set(["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d"]);
+    if (!MARKET_SYMBOLS.has(symbol)) return res.status(400).json({ ok:false, error:"Unsupported market symbol" });
+    if (!allowedIntervals.has(interval)) return res.status(400).json({ ok:false, error:"Unsupported interval" });
+
+    let all = [];
+    let endTime;
+    while (all.length < MARKET_CANDLE_MAX) {
+      const batchLimit = Math.min(1000, MARKET_CANDLE_MAX - all.length);
+      const url = new URL("https://api.binance.com/api/v3/klines");
+      url.searchParams.set("symbol", symbol);
+      url.searchParams.set("interval", interval);
+      url.searchParams.set("limit", String(batchLimit));
+      if (endTime) url.searchParams.set("endTime", String(endTime));
+
+      const upstream = await fetch(url);
+      if (!upstream.ok) throw new Error("Market data provider returned " + upstream.status);
+      const rows = await upstream.json();
+      if (!Array.isArray(rows) || rows.length === 0) break;
+
+      all = rows.concat(all);
+      endTime = Number(rows[0][0]) - 1;
+      if (rows.length < batchLimit) break;
+    }
+
+    const seen = new Set();
+    const candles = all.filter(row => {
+      const t = Number(row[0]);
+      if (seen.has(t)) return false;
+      seen.add(t);
+      return true;
+    }).slice(-MARKET_CANDLE_MAX).map(row => ({
+      time: Math.floor(Number(row[0]) / 1000),
+      open: Number(row[1]),
+      high: Number(row[2]),
+      low: Number(row[3]),
+      close: Number(row[4])
+    }));
+
+    res.json({ ok:true, symbol, interval, maxCandles:MARKET_CANDLE_MAX, candles });
+  } catch (error) {
+    res.status(502).json({ ok:false, error:"Unable to load market data" });
+  }
+});
+
 app.post("/api/v1/auth/register", async (req, res) => {
   try {
     const result = await register(pool, req.body?.fullName, req.body?.email, req.body?.password);
