@@ -1251,7 +1251,7 @@ let accountTimer=null;
 function startTerminalPolling(){
   if(marketTimer)clearInterval(marketTimer);
   if(accountTimer)clearInterval(accountTimer);
-  if(terminalSessionToken)connectMarketWebSocket();
+  // Market data is polled from the Aura Funding Biquote API; no legacy Course-Era websocket.
   accountTimer=setInterval(function(){
     if(terminalSessionToken){
       lastTerminalAccountRefresh=Date.now();
