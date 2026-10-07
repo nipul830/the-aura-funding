@@ -36,11 +36,7 @@ app.all("/api/*splat", async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, "public"), {
-  setHeaders(res, filePath) {
-    if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-store, max-age=0");
-  }
-}));
+// Home must run before static so the server can inject the current session.
 app.get("/", async (req, res) => {
   res.setHeader("Cache-Control", "no-store, max-age=0");
   try {
@@ -61,6 +57,13 @@ app.get("/", async (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
   }
 });
+
+app.use(express.static(path.join(__dirname, "public"), {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-store, max-age=0");
+  }
+}));
+
 app.get("/login", (_req, res) => {
   res.setHeader("Cache-Control", "no-store, max-age=0");
   res.sendFile(path.join(__dirname, "public", "login.html"));
