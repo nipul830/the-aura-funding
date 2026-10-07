@@ -9,7 +9,7 @@ import { Pool } from "pg";
 import { evaluateRisk } from "./risk/risk-engine.js";
 import { normalizeRules } from "./risk/rule-schema.js";
 import { riskRulesRouter } from "./admin/risk-rules-api.js";
-import { ensureAdmin, register, login, logout, getSessionUser, getProfile, updateProfile, readSessionCookie, setSessionCookie, clearSessionCookie, requireAuth } from "./auth.js";
+import { ensureAdmin, register, login, logout, getSessionUser, getProfile, updateProfile, readSessionCookie, setSessionCookie, clearSessionCookie, requireAuth } from "./auth.js";\nimport { ensureTerminalCredentialsTable, getOrCreateTerminalCredentials } from "./terminal-auth.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -359,7 +359,7 @@ app.patch("/api/v1/admin/plans/:id", requireAuth(pool, ["admin"]), async (req, r
   } finally { client.release(); }
 });
 
-app.get("/api/v1/auth/me", async (req, res) => {
+app.get("/api/v1/terminal/credentials", requireAuth(pool), async (req, res) => {\n  try {\n    const credentials = await getOrCreateTerminalCredentials(pool, req.user.id);\n    res.json({ ok: true, credentials });\n  } catch (error) {\n    res.status(500).json({ ok: false, error: error.message });\n  }\n});\n\napp.get("/api/v1/auth/me", async (req, res) => {
   try {
     const user = await getSessionUser(pool, readSessionCookie(req));
     if (!user) return res.status(401).json({ ok: false, error: "Not authenticated" });
