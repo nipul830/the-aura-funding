@@ -99,13 +99,20 @@
     const d=await r.json();
     const stories=document.getElementById("publicStories");
     if(stories){
-      stories.innerHTML=(d.stories||[]).map(s=>`<article class="story-card">
-        <img class="story-avatar" src="${s.image_url||"https://i.pravatar.cc/300?img=12"}" alt="">
-        <div class="story-body"><div class="story-meta"><b>${s.name||"Trader"}</b><span>${s.account_type||""}</span></div>
-        <div class="story-profit">+${Number(s.profit_amount||0).toFixed(2)}</div>
-        <p>“${s.quote||"Professional trading experience with clear rules."}”</p>
-        <div class="story-stars">★★★★★</div></div>
-      </article>`).join("")||'<div class="content-empty">No trader stories available yet.</div>';
+      const list=d.stories||[];
+      if(list.length){
+        const makeCard=s=>`<article class="story-slide"><div class="story-card">
+          <img class="story-avatar" src="${s.image_url||"https://i.pravatar.cc/300?img=12"}" alt="">
+          <div class="story-body"><div class="story-meta"><b>${s.name||"Trader"}</b><span>${s.account_type||""}</span></div>
+          <div class="story-profit">+$${Number(s.profit_amount||0).toFixed(2)}</div>
+          <p>“${s.quote||"Professional trading experience with clear rules."}”</p>
+          <div class="story-stars">★★★★★</div></div>
+        </div></article>`;
+        const cards=list.map(makeCard).join("");
+        stories.innerHTML=`<div class="story-marquee"><div class="story-track">${cards}${cards}</div></div>`;
+      }else{
+        stories.innerHTML='<div class="content-empty">No trader stories available yet.</div>';
+      }
     }
     const faq=document.getElementById("publicFaq");
     if(faq){
